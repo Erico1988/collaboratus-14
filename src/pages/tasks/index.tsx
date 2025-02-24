@@ -2,6 +2,7 @@
 import { MainLayout } from "@/components/layout/MainLayout";
 import { KanbanBoard } from "@/components/tasks/KanbanBoard";
 import { GanttChart } from "@/components/tasks/GanttChart";
+import { TaskTable } from "@/components/tasks/TaskTable";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
@@ -269,12 +270,18 @@ const TasksPage = () => {
           <TabsList>
             <TabsTrigger value="kanban">Kanban</TabsTrigger>
             <TabsTrigger value="gantt">Gantt</TabsTrigger>
+            <TabsTrigger value="table">Tableau</TabsTrigger>
           </TabsList>
           <TabsContent value="kanban">
             <KanbanBoard />
           </TabsContent>
           <TabsContent value="gantt">
             <GanttChart tasks={procureTrackTasks} />
+          </TabsContent>
+          <TabsContent value="table">
+            <div className="bg-white rounded-lg shadow p-6">
+              <TaskTable tasks={procureTrackTasks} />
+            </div>
           </TabsContent>
         </Tabs>
 
