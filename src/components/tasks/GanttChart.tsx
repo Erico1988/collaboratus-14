@@ -61,6 +61,16 @@ const PRIORITY_COLORS = {
   urgent: '#e11d48'
 };
 
+const STATUS_COLORS = {
+  todo: '#94a3b8',
+  in_progress: '#3b82f6',
+  review: '#f59e0b',
+  done: '#22c55e',
+  pending: '#9333ea',
+  rejected: '#ef4444',
+  assigned: '#0ea5e9'
+};
+
 export const GanttChart = ({ tasks }: GanttChartProps) => {
   const ganttContainer = useRef<HTMLDivElement>(null);
   const [currentZoom, setCurrentZoom] = useState<keyof typeof ZOOM_LEVELS>('days');
@@ -74,7 +84,6 @@ export const GanttChart = ({ tasks }: GanttChartProps) => {
   useEffect(() => {
     if (!ganttContainer.current || !tasks.length) return;
 
-    // Configuration initiale
     gantt.config.date_format = "%Y-%m-%d";
     gantt.config.drag_links = true;
     gantt.config.drag_progress = true;
@@ -98,7 +107,6 @@ export const GanttChart = ({ tasks }: GanttChartProps) => {
       ]
     };
 
-    // Configuration des colonnes
     gantt.config.columns = [
       { name: "text", label: "Tâche", tree: true, width: 200 },
       { name: "assignee", label: "Assigné à", align: "center", width: 100 },
@@ -107,25 +115,21 @@ export const GanttChart = ({ tasks }: GanttChartProps) => {
       }}
     ];
 
-    // Style personnalisé pour les tâches
     gantt.templates.task_class = (start, end, task) => {
       const classes = ['custom-task'];
       if (task.priority) classes.push(`priority-${task.priority}`);
-      if (task.status === 'done') classes.push('task-completed');
+      if (task.status) classes.push(`status-${task.status}`);
       return classes.join(' ');
     };
 
-    // Style personnalisé pour les barres de progression
     gantt.templates.progress_text = (start, end, task) => {
       return `<div class="gantt-progress-label">${Math.round(task.progress * 100)}%</div>`;
     };
 
-    // Formattage des dates
     gantt.templates.date_scale = (date) => {
       return format(new Date(date), 'PP', { locale: fr });
     };
 
-    // Gestion des événements
     gantt.attachEvent("onTaskDrag", (id, mode, task, original) => {
       return true;
     });
@@ -140,7 +144,6 @@ export const GanttChart = ({ tasks }: GanttChartProps) => {
       return true;
     });
 
-    // Initialisation
     try {
       if (!isFirstRender.current) {
         gantt.destructor();
@@ -149,7 +152,6 @@ export const GanttChart = ({ tasks }: GanttChartProps) => {
 
       gantt.init(ganttContainer.current);
 
-      // Chargement des données
       const ganttTasks = tasks.map(task => ({
         id: task.id,
         text: task.title,
@@ -177,7 +179,6 @@ export const GanttChart = ({ tasks }: GanttChartProps) => {
         links: ganttLinks
       });
 
-      // Update currentDate after initialization
       const state = gantt.getState();
       if (state?.min_date) {
         setCurrentDate(new Date(state.min_date));
@@ -189,7 +190,6 @@ export const GanttChart = ({ tasks }: GanttChartProps) => {
       toast.error("Erreur lors de l'initialisation du diagramme");
     }
 
-    // Cleanup function
     return () => {
       setIsInitialized(false);
       if (gantt.destructor && !isFirstRender.current) {
@@ -202,7 +202,6 @@ export const GanttChart = ({ tasks }: GanttChartProps) => {
     };
   }, [tasks]);
 
-  // Gestion du zoom
   const setZoom = (level: keyof typeof ZOOM_LEVELS) => {
     if (!isInitialized) return;
     try {
@@ -215,7 +214,6 @@ export const GanttChart = ({ tasks }: GanttChartProps) => {
     }
   };
 
-  // Navigation temporelle
   const navigateDate = (direction: 'prev' | 'next') => {
     if (!isInitialized) return;
     try {
@@ -229,7 +227,6 @@ export const GanttChart = ({ tasks }: GanttChartProps) => {
     }
   };
 
-  // Export des données
   const exportData = (exportType: 'pdf' | 'excel' | 'png') => {
     if (!isInitialized) return;
     
@@ -280,7 +277,6 @@ export const GanttChart = ({ tasks }: GanttChartProps) => {
         </div>
         
         <div className="flex gap-2">
-          {/* Contrôles de zoom */}
           <div className="flex gap-1">
             <Button variant="outline" size="sm" onClick={() => setZoom('hours')} disabled={!isInitialized}>Heures</Button>
             <Button variant="outline" size="sm" onClick={() => setZoom('days')} disabled={!isInitialized}>Jours</Button>
@@ -288,7 +284,6 @@ export const GanttChart = ({ tasks }: GanttChartProps) => {
             <Button variant="outline" size="sm" onClick={() => setZoom('months')} disabled={!isInitialized}>Mois</Button>
           </div>
 
-          {/* Options d'affichage */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="sm" disabled={!isInitialized}>
@@ -320,7 +315,6 @@ export const GanttChart = ({ tasks }: GanttChartProps) => {
             </DropdownMenuContent>
           </DropdownMenu>
 
-          {/* Export */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="sm" disabled={!isInitialized}>
@@ -408,6 +402,12 @@ export const GanttChart = ({ tasks }: GanttChartProps) => {
           font-size: 12px;
           font-weight: 500;
         }
+
+        ${Object.entries(STATUS_COLORS).map(([status, color]) => `
+          .status-${status} .gantt_task_line {
+            background-color: ${color};
+          }
+        `).join('\n')}
       `}</style>
     </div>
   );

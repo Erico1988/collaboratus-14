@@ -1,4 +1,3 @@
-
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -30,7 +29,7 @@ const taskSchema = z.object({
   title: z.string().min(3, "Le titre doit contenir au moins 3 caractères"),
   description: z.string(),
   priority: z.enum(["low", "medium", "high", "urgent"] as const),
-  status: z.enum(["todo", "in_progress", "review", "done"] as const),
+  status: z.enum(["todo", "in_progress", "review", "done", "pending", "rejected", "assigned"] as const),
   dueDate: z.string(),
   assigneeName: z.string().optional(),
   dependsOn: z.array(z.string()).optional(),
@@ -57,6 +56,9 @@ const statuses: { value: TaskStatus; label: string }[] = [
   { value: "in_progress", label: "En cours" },
   { value: "review", label: "En révision" },
   { value: "done", label: "Terminé" },
+  { value: "pending", label: "Validation en cours" },
+  { value: "rejected", label: "Rejeté" },
+  { value: "assigned", label: "Assigné" }
 ];
 
 export const TaskForm = ({ task, onSubmit, onCancel }: TaskFormProps) => {
