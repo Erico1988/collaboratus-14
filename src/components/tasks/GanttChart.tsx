@@ -77,6 +77,9 @@ export const GanttChart = ({ tasks }: GanttChartProps) => {
   useEffect(() => {
     if (!ganttContainer.current || !tasks.length) return;
 
+    // Ensure we clean up any previous instance
+    gantt.destructor();
+
     // Configuration initiale
     gantt.config.date_format = "%Y-%m-%d";
     gantt.config.drag_links = true;
@@ -125,7 +128,7 @@ export const GanttChart = ({ tasks }: GanttChartProps) => {
 
     // Formattage des dates
     gantt.templates.date_scale = (date) => {
-      return format(date, 'PP', { locale: fr });
+      return format(new Date(date), 'PP', { locale: fr });
     };
 
     // Gestion des événements
@@ -144,47 +147,57 @@ export const GanttChart = ({ tasks }: GanttChartProps) => {
     });
 
     // Initialisation
-    gantt.init(ganttContainer.current);
+    try {
+      gantt.init(ganttContainer.current);
 
-    // Chargement des données
-    const ganttTasks = tasks.map(task => ({
-      id: task.id,
-      text: task.title,
-      start_date: parseISO(task.createdAt),
-      end_date: parseISO(task.dueDate),
-      progress: task.status === 'done' ? 1 : task.status === 'in_progress' ? 0.5 : 0,
-      priority: task.priority,
-      status: task.status,
-      assignee: task.assigneeName
-    }));
+      // Chargement des données
+      const ganttTasks = tasks.map(task => ({
+        id: task.id,
+        text: task.title,
+        start_date: parseISO(task.createdAt),
+        end_date: parseISO(task.dueDate),
+        progress: task.status === 'done' ? 1 : task.status === 'in_progress' ? 0.5 : 0,
+        priority: task.priority,
+        status: task.status,
+        assignee: task.assigneeName
+      }));
 
-    const ganttLinks = tasks
-      .filter(task => task.dependsOn)
-      .flatMap(task => 
-        task.dependsOn!.map(depId => ({
-          id: `${depId}-${task.id}`,
-          source: depId,
-          target: task.id,
-          type: "0"
-        }))
-      );
+      const ganttLinks = tasks
+        .filter(task => task.dependsOn)
+        .flatMap(task => 
+          task.dependsOn!.map(depId => ({
+            id: `${depId}-${task.id}`,
+            source: depId,
+            target: task.id,
+            type: "0"
+          }))
+        );
 
-    gantt.parse({
-      data: ganttTasks,
-      links: ganttLinks
-    });
+      gantt.parse({
+        data: ganttTasks,
+        links: ganttLinks
+      });
 
-    // Récupérer la date de début du projet après l'initialisation
-    if (gantt.getState()?.min_date) {
-      setCurrentDate(gantt.getState().min_date);
+      // Attendre un tick pour s'assurer que le gantt est initialisé
+      setTimeout(() => {
+        if (gantt.getState()?.min_date) {
+          setCurrentDate(new Date(gantt.getState().min_date));
+        }
+        setIsInitialized(true);
+      }, 0);
+
+    } catch (error) {
+      console.error("Error initializing gantt chart:", error);
+      toast.error("Erreur lors de l'initialisation du diagramme");
     }
-
-    // Marquer comme initialisé
-    setIsInitialized(true);
 
     // Nettoyage
     return () => {
-      gantt.clearAll();
+      try {
+        gantt.destructor();
+      } catch (error) {
+        console.error("Error destroying gantt chart:", error);
+      }
       setIsInitialized(false);
     };
   }, [tasks]);
@@ -192,35 +205,53 @@ export const GanttChart = ({ tasks }: GanttChartProps) => {
   // Gestion du zoom
   const setZoom = (level: keyof typeof ZOOM_LEVELS) => {
     if (!isInitialized) return;
-    setCurrentZoom(level);
-    gantt.config.scales = ZOOM_LEVELS[level].scales as any;
-    gantt.render();
+    try {
+      setCurrentZoom(level);
+      gantt.config.scales = ZOOM_LEVELS[level].scales as any;
+      gantt.render();
+    } catch (error) {
+      console.error("Error setting zoom:", error);
+      toast.error("Erreur lors du changement de zoom");
+    }
   };
 
   // Navigation temporelle
-  const scrollToDate = (date: Date) => {
+  const navigateDate = (direction: 'prev' | 'next') => {
     if (!isInitialized) return;
-    gantt.scrollTo(date.getTime());
+    try {
+      const newDate = new Date(currentDate);
+      newDate.setDate(newDate.getDate() + (direction === 'next' ? 7 : -7));
+      setCurrentDate(newDate);
+      gantt.showDate(newDate);
+    } catch (error) {
+      console.error("Error navigating date:", error);
+      toast.error("Erreur lors de la navigation");
+    }
   };
 
   // Export des données
   const exportData = (format: 'pdf' | 'excel' | 'png') => {
     if (!isInitialized) return;
     
-    const now = new Date();
-    const dateStr = format(now, 'yyyy-MM-dd');
-    const filename = `procuretrack-planning-${dateStr}`;
-    
-    switch (format) {
-      case 'pdf':
-        gantt.exportToPDF({ name: `${filename}.pdf` });
-        break;
-      case 'excel':
-        gantt.exportToExcel({ name: `${filename}.xlsx` });
-        break;
-      case 'png':
-        gantt.exportToPNG({ name: `${filename}.png` });
-        break;
+    try {
+      const now = new Date();
+      const dateStr = format(now, 'yyyy-MM-dd');
+      const filename = `procuretrack-planning-${dateStr}`;
+      
+      switch (format) {
+        case 'pdf':
+          gantt.exportToPDF({ filename: `${filename}.pdf` });
+          break;
+        case 'excel':
+          gantt.exportToExcel({ filename: `${filename}.xlsx` });
+          break;
+        case 'png':
+          gantt.exportToPNG({ filename: `${filename}.png` });
+          break;
+      }
+    } catch (error) {
+      console.error("Error exporting data:", error);
+      toast.error("Erreur lors de l'export");
     }
   };
 
@@ -231,7 +262,7 @@ export const GanttChart = ({ tasks }: GanttChartProps) => {
           <Button 
             variant="outline" 
             size="sm" 
-            onClick={() => scrollToDate(new Date(currentDate.getTime() - 7 * 24 * 60 * 60 * 1000))}
+            onClick={() => navigateDate('prev')}
             disabled={!isInitialized}
           >
             <ChevronLeft className="h-4 w-4" />
@@ -242,7 +273,7 @@ export const GanttChart = ({ tasks }: GanttChartProps) => {
           <Button 
             variant="outline" 
             size="sm" 
-            onClick={() => scrollToDate(new Date(currentDate.getTime() + 7 * 24 * 60 * 60 * 1000))}
+            onClick={() => navigateDate('next')}
             disabled={!isInitialized}
           >
             <ChevronRight className="h-4 w-4" />
@@ -308,7 +339,7 @@ export const GanttChart = ({ tasks }: GanttChartProps) => {
                 Excel
               </DropdownMenuCheckboxItem>
               <DropdownMenuCheckboxItem onClick={() => exportData('png')}>
-                Image PNG
+                PNG
               </DropdownMenuCheckboxItem>
             </DropdownMenuContent>
           </DropdownMenu>
