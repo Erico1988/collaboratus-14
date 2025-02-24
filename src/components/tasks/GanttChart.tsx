@@ -72,6 +72,7 @@ export const GanttChart = ({ tasks }: GanttChartProps) => {
   const [showProgress, setShowProgress] = useState(true);
   const [showCriticalPath, setShowCriticalPath] = useState(true);
   const [currentDate, setCurrentDate] = useState(new Date());
+  const [isInitialized, setIsInitialized] = useState(false);
 
   useEffect(() => {
     if (!ganttContainer.current || !tasks.length) return;
@@ -178,22 +179,38 @@ export const GanttChart = ({ tasks }: GanttChartProps) => {
       setCurrentDate(gantt.getState().min_date);
     }
 
+    // Marquer comme initialisé
+    setIsInitialized(true);
+
     // Nettoyage
     return () => {
       gantt.clearAll();
+      setIsInitialized(false);
     };
   }, [tasks]);
 
   // Gestion du zoom
   const setZoom = (level: keyof typeof ZOOM_LEVELS) => {
+    if (!isInitialized) return;
     setCurrentZoom(level);
     gantt.config.scales = ZOOM_LEVELS[level].scales as any;
     gantt.render();
   };
 
+  // Navigation temporelle
+  const scrollToDate = (date: Date) => {
+    if (!isInitialized) return;
+    gantt.scrollTo(date.getTime());
+  };
+
   // Export des données
   const exportData = (format: 'pdf' | 'excel' | 'png') => {
-    const filename = `procuretrack-planning-${format(new Date(), 'yyyy-MM-dd')}`;
+    if (!isInitialized) return;
+    
+    const now = new Date();
+    const dateStr = format(now, 'yyyy-MM-dd');
+    const filename = `procuretrack-planning-${dateStr}`;
+    
     switch (format) {
       case 'pdf':
         gantt.exportToPDF({ name: `${filename}.pdf` });
@@ -211,13 +228,23 @@ export const GanttChart = ({ tasks }: GanttChartProps) => {
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => gantt.scrollToDate(new Date())}>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => scrollToDate(new Date(currentDate.getTime() - 7 * 24 * 60 * 60 * 1000))}
+            disabled={!isInitialized}
+          >
             <ChevronLeft className="h-4 w-4" />
           </Button>
           <span className="text-sm font-medium">
             {format(currentDate, 'MMMM yyyy', { locale: fr })}
           </span>
-          <Button variant="outline" size="sm" onClick={() => gantt.scrollToDate(new Date())}>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => scrollToDate(new Date(currentDate.getTime() + 7 * 24 * 60 * 60 * 1000))}
+            disabled={!isInitialized}
+          >
             <ChevronRight className="h-4 w-4" />
           </Button>
         </div>
@@ -225,16 +252,16 @@ export const GanttChart = ({ tasks }: GanttChartProps) => {
         <div className="flex gap-2">
           {/* Contrôles de zoom */}
           <div className="flex gap-1">
-            <Button variant="outline" size="sm" onClick={() => setZoom('hours')}>Heures</Button>
-            <Button variant="outline" size="sm" onClick={() => setZoom('days')}>Jours</Button>
-            <Button variant="outline" size="sm" onClick={() => setZoom('weeks')}>Semaines</Button>
-            <Button variant="outline" size="sm" onClick={() => setZoom('months')}>Mois</Button>
+            <Button variant="outline" size="sm" onClick={() => setZoom('hours')} disabled={!isInitialized}>Heures</Button>
+            <Button variant="outline" size="sm" onClick={() => setZoom('days')} disabled={!isInitialized}>Jours</Button>
+            <Button variant="outline" size="sm" onClick={() => setZoom('weeks')} disabled={!isInitialized}>Semaines</Button>
+            <Button variant="outline" size="sm" onClick={() => setZoom('months')} disabled={!isInitialized}>Mois</Button>
           </div>
 
           {/* Options d'affichage */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" disabled={!isInitialized}>
                 <Filter className="h-4 w-4 mr-1" />
                 Options
               </Button>
@@ -266,7 +293,7 @@ export const GanttChart = ({ tasks }: GanttChartProps) => {
           {/* Export */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" disabled={!isInitialized}>
                 <Download className="h-4 w-4 mr-1" />
                 Exporter
               </Button>
@@ -298,8 +325,7 @@ export const GanttChart = ({ tasks }: GanttChartProps) => {
         </ScrollArea>
       </Card>
 
-      <style>
-        {`
+      <style>{`
         .gantt_task_line {
           border-radius: 4px;
           transition: all 0.2s ease;
@@ -352,8 +378,7 @@ export const GanttChart = ({ tasks }: GanttChartProps) => {
           font-size: 12px;
           font-weight: 500;
         }
-        `}
-      </style>
+      `}</style>
     </div>
   );
 };
