@@ -1,399 +1,354 @@
 
-import { useState, useRef, useEffect } from 'react';
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ReferenceArea,
-  ResponsiveContainer,
-  ReferenceLine
-} from 'recharts';
-import { Task } from '@/types/task';
-import { 
-  format, 
-  addDays, 
-  differenceInDays, 
-  parseISO, 
-  isAfter, 
-  startOfWeek,
-  endOfWeek,
-  eachDayOfInterval,
-  isSameDay,
-  isWeekend,
-  addWeeks
-} from 'date-fns';
-import { fr } from 'date-fns/locale';
-import { Button } from '@/components/ui/button';
-import { ZoomIn, ZoomOut, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { cn } from '@/lib/utils';
+import { Task } from '@/types/task';
+import {
+  ZoomIn,
+  ZoomOut,
+  ChevronLeft,
+  ChevronRight,
+  Filter,
+  Download,
+  Layers
+} from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuCheckboxItem,
+} from "@/components/ui/dropdown-menu";
+import { toast } from "sonner";
+import { gantt } from 'dhtmlx-gantt';
+import 'dhtmlx-gantt/codebase/dhtmlxgantt.css';
+import { format } from 'date-fns';
+import { fr } from 'date-fns/locale';
 
 interface GanttChartProps {
   tasks: Task[];
 }
 
-interface GanttTask {
-  id: string;
-  name: string;
-  start: number;
-  duration: number;
-  dependencies: string[];
-  y: number;
-  status: string;
-  completion: number;
-  assigneeName?: string;
-  priority: string;
-}
-
-const COLORS = {
-  todo: '#e11d48',
-  in_progress: '#f59e0b',
-  review: '#3b82f6',
-  done: '#22c55e',
+const ZOOM_LEVELS = {
+  hours: {
+    scales: [
+      { unit: 'day', format: '%d %M' },
+      { unit: 'hour', format: '%H:00' }
+    ]
+  },
+  days: {
+    scales: [
+      { unit: 'month', format: '%F %Y' },
+      { unit: 'day', format: '%j %D' }
+    ]
+  },
+  weeks: {
+    scales: [
+      { unit: 'year', format: '%Y' },
+      { unit: 'week', format: 'Semaine %W' }
+    ]
+  },
+  months: {
+    scales: [
+      { unit: 'year', format: '%Y' },
+      { unit: 'month', format: '%F' }
+    ]
+  }
 };
 
-const PRIORITY_PATTERNS = {
-  low: '',
-  medium: '2,2',
-  high: '4,2',
-  urgent: '8,2',
+const PRIORITY_COLORS = {
+  low: '#22c55e',
+  medium: '#f59e0b',
+  high: '#3b82f6',
+  urgent: '#e11d48'
 };
 
 export const GanttChart = ({ tasks }: GanttChartProps) => {
-  const [zoomLevel, setZoomLevel] = useState(1);
-  const [startDate, setStartDate] = useState<Date>(() => {
-    const dates = tasks.map(task => parseISO(task.dueDate));
-    return dates.length > 0 ? 
-      startOfWeek(new Date(Math.min(...dates.map(d => d.getTime()))), { locale: fr }) : 
-      startOfWeek(new Date(), { locale: fr });
-  });
-  const [hoveredTask, setHoveredTask] = useState<string | null>(null);
+  const ganttContainer = useRef<HTMLDivElement>(null);
+  const [currentZoom, setCurrentZoom] = useState<keyof typeof ZOOM_LEVELS>('days');
+  const [showResources, setShowResources] = useState(true);
+  const [showProgress, setShowProgress] = useState(true);
+  const [showCriticalPath, setShowCriticalPath] = useState(true);
 
-  const calculateTaskProgress = (task: Task): number => {
-    switch (task.status) {
-      case 'done': return 100;
-      case 'review': return 75;
-      case 'in_progress': return 30;
-      default: return 0;
-    }
-  };
+  useEffect(() => {
+    if (!ganttContainer.current) return;
 
-  const processedTasks = tasks.map((task, index) => {
-    const dueDate = parseISO(task.dueDate);
-    const estimatedStartDate = addDays(dueDate, -7);
-    const start = differenceInDays(estimatedStartDate, startDate);
-    return {
-      id: task.id,
-      name: task.title,
-      start,
-      duration: 7,
-      dependencies: task.dependsOn || [],
-      y: index,
-      status: task.status,
-      completion: calculateTaskProgress(task),
-      assigneeName: task.assigneeName,
-      priority: task.priority,
-    };
-  });
-
-  const handleZoomIn = () => {
-    setZoomLevel(prev => Math.min(prev * 1.5, 4));
-  };
-
-  const handleZoomOut = () => {
-    setZoomLevel(prev => Math.max(prev / 1.5, 0.5));
-  };
-
-  const handlePreviousWeek = () => {
-    setStartDate(prev => addWeeks(prev, -1));
-  };
-
-  const handleNextWeek = () => {
-    setStartDate(prev => addWeeks(prev, 1));
-  };
-
-  const calculateCriticalPath = () => {
-    const taskMap = new Map(processedTasks.map(task => [task.id, { ...task }]));
-    const visited = new Set<string>();
-    const memo = new Map<string, number>();
-
-    const dfs = (taskId: string): number => {
-      if (visited.has(taskId)) return memo.get(taskId) || 0;
-      visited.add(taskId);
-
-      const task = taskMap.get(taskId);
-      if (!task) return 0;
-
-      let maxDependencyDuration = 0;
-      for (const depId of task.dependencies) {
-        maxDependencyDuration = Math.max(maxDependencyDuration, dfs(depId));
-      }
-
-      const totalDuration = task.duration + maxDependencyDuration;
-      memo.set(taskId, totalDuration);
-      return totalDuration;
+    // Configuration initiale
+    gantt.config.date_format = "%Y-%m-%d";
+    gantt.config.drag_links = true;
+    gantt.config.drag_progress = true;
+    gantt.config.drag_resize = true;
+    gantt.config.duration_unit = 'day';
+    gantt.config.row_height = 40;
+    gantt.config.layout = {
+      css: "gantt_container",
+      rows: [
+        {
+          cols: [
+            { view: "grid", width: 300 },
+            { resizer: true, width: 1 },
+            { view: "timeline", scrollX: "scrollHor", scrollY: "scrollVer" }
+          ]
+        },
+        { view: "scrollVer" },
+        {
+          cols: [{ view: "scrollHor" }]
+        }
+      ]
     };
 
-    processedTasks.forEach(task => {
-      if (!visited.has(task.id)) {
-        dfs(task.id);
-      }
+    // Configuration des colonnes
+    gantt.config.columns = [
+      { name: "text", label: "Tâche", tree: true, width: 200 },
+      { name: "assignee", label: "Assigné à", align: "center", width: 100 },
+      { name: "progress", label: "Progression", align: "center", width: 80, template: (task) => {
+        return Math.round(task.progress * 100) + "%";
+      }}
+    ];
+
+    // Style personnalisé pour les tâches
+    gantt.templates.task_class = (start, end, task) => {
+      const classes = ['custom-task'];
+      if (task.priority) classes.push(`priority-${task.priority}`);
+      if (task.status === 'done') classes.push('task-completed');
+      return classes.join(' ');
+    };
+
+    // Style personnalisé pour les barres de progression
+    gantt.templates.progress_text = (start, end, task) => {
+      return `<div class="gantt-progress-label">${Math.round(task.progress * 100)}%</div>`;
+    };
+
+    // Formattage des dates
+    gantt.templates.date_scale = (date) => {
+      return format(date, 'PP', { locale: fr });
+    };
+
+    // Gestion des événements
+    gantt.attachEvent("onTaskDrag", (id, mode, task, original) => {
+      console.log("Task being dragged:", id);
     });
 
-    return memo;
+    gantt.attachEvent("onAfterTaskUpdate", (id, task) => {
+      toast.success(`Tâche "${task.text}" mise à jour`);
+    });
+
+    gantt.attachEvent("onLinkCreated", (link) => {
+      toast.success("Nouvelle dépendance ajoutée");
+    });
+
+    // Initialisation
+    gantt.init(ganttContainer.current);
+
+    // Chargement des données
+    const ganttTasks = tasks.map(task => ({
+      id: task.id,
+      text: task.title,
+      start_date: new Date(task.createdAt),
+      end_date: new Date(task.dueDate),
+      progress: task.status === 'done' ? 1 : task.status === 'in_progress' ? 0.5 : 0,
+      priority: task.priority,
+      status: task.status,
+      assignee: task.assigneeName
+    }));
+
+    const ganttLinks = tasks
+      .filter(task => task.dependsOn)
+      .flatMap(task => 
+        task.dependsOn!.map(depId => ({
+          id: `${depId}-${task.id}`,
+          source: depId,
+          target: task.id,
+          type: "0"
+        }))
+      );
+
+    gantt.parse({
+      data: ganttTasks,
+      links: ganttLinks
+    });
+
+    // Nettoyage
+    return () => {
+      gantt.clearAll();
+    };
+  }, [tasks]);
+
+  // Gestion du zoom
+  const setZoom = (level: keyof typeof ZOOM_LEVELS) => {
+    setCurrentZoom(level);
+    gantt.config.scales = ZOOM_LEVELS[level].scales;
+    gantt.render();
   };
 
-  const criticalPathDurations = calculateCriticalPath();
-  const maxCriticalDuration = Math.max(...Array.from(criticalPathDurations.values()));
-
-  // Génération des lignes de référence pour les week-ends
-  const weekendLines = eachDayOfInterval({
-    start: startDate,
-    end: addDays(startDate, 30)
-  })
-  .filter(date => isWeekend(date))
-  .map(date => differenceInDays(date, startDate));
-
-  const CustomTooltip = ({ active, payload }: any) => {
-    if (!active || !payload?.length) return null;
-
-    const data = payload[0].payload as GanttTask;
-    const startDateStr = format(addDays(startDate, data.start), 'PP', { locale: fr });
-    const endDateStr = format(addDays(startDate, data.start + data.duration), 'PP', { locale: fr });
-
-    return (
-      <Card className="p-3 shadow-lg border-2">
-        <div className="space-y-2">
-          <div>
-            <h4 className="font-semibold">{data.name}</h4>
-            {data.assigneeName && (
-              <p className="text-sm text-muted-foreground">
-                Assigné à: {data.assigneeName}
-              </p>
-            )}
-          </div>
-          <div className="text-sm space-y-1">
-            <p>Début: {startDateStr}</p>
-            <p>Fin: {endDateStr}</p>
-            <p>Durée: {data.duration} jours</p>
-            <p>Avancement: {data.completion}%</p>
-            <p>Priorité: {data.priority}</p>
-          </div>
-          {data.dependencies.length > 0 && (
-            <div className="text-sm">
-              <p>Dépendances:</p>
-              <ul className="list-disc list-inside">
-                {data.dependencies.map(depId => {
-                  const depTask = processedTasks.find(t => t.id === depId);
-                  return depTask && <li key={depId}>{depTask.name}</li>;
-                })}
-              </ul>
-            </div>
-          )}
-        </div>
-      </Card>
-    );
+  // Export des données
+  const exportData = (format: 'pdf' | 'excel' | 'png') => {
+    switch (format) {
+      case 'pdf':
+        gantt.exportToPDF({
+          name: `procuretrack-planning-${format(new Date(), 'yyyy-MM-dd')}.pdf`
+        });
+        break;
+      case 'excel':
+        gantt.exportToExcel({
+          name: `procuretrack-planning-${format(new Date(), 'yyyy-MM-dd')}.xlsx`
+        });
+        break;
+      case 'png':
+        gantt.exportToPNG({
+          name: `procuretrack-planning-${format(new Date(), 'yyyy-MM-dd')}.png`
+        });
+        break;
+    }
   };
 
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={handlePreviousWeek}>
+          <Button variant="outline" size="sm" onClick={() => gantt.scrollToDate(new Date())}>
             <ChevronLeft className="h-4 w-4" />
           </Button>
           <span className="text-sm font-medium">
-            {format(startDate, 'MMMM yyyy', { locale: fr })}
+            {format(gantt.getState().min_date, 'MMMM yyyy', { locale: fr })}
           </span>
-          <Button variant="outline" size="sm" onClick={handleNextWeek}>
+          <Button variant="outline" size="sm" onClick={() => gantt.scrollToDate(new Date())}>
             <ChevronRight className="h-4 w-4" />
           </Button>
         </div>
+        
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={handleZoomOut}>
-            <ZoomOut className="h-4 w-4" />
-          </Button>
-          <Button variant="outline" size="sm" onClick={handleZoomIn}>
-            <ZoomIn className="h-4 w-4" />
-          </Button>
+          {/* Contrôles de zoom */}
+          <div className="flex gap-1">
+            <Button variant="outline" size="sm" onClick={() => setZoom('hours')}>Heures</Button>
+            <Button variant="outline" size="sm" onClick={() => setZoom('days')}>Jours</Button>
+            <Button variant="outline" size="sm" onClick={() => setZoom('weeks')}>Semaines</Button>
+            <Button variant="outline" size="sm" onClick={() => setZoom('months')}>Mois</Button>
+          </div>
+
+          {/* Options d'affichage */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm">
+                <Filter className="h-4 w-4 mr-1" />
+                Options
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              <DropdownMenuLabel>Affichage</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuCheckboxItem
+                checked={showResources}
+                onCheckedChange={setShowResources}
+              >
+                Ressources
+              </DropdownMenuCheckboxItem>
+              <DropdownMenuCheckboxItem
+                checked={showProgress}
+                onCheckedChange={setShowProgress}
+              >
+                Progression
+              </DropdownMenuCheckboxItem>
+              <DropdownMenuCheckboxItem
+                checked={showCriticalPath}
+                onCheckedChange={setShowCriticalPath}
+              >
+                Chemin critique
+              </DropdownMenuCheckboxItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {/* Export */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm">
+                <Download className="h-4 w-4 mr-1" />
+                Exporter
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              <DropdownMenuLabel>Format</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuCheckboxItem onClick={() => exportData('pdf')}>
+                PDF
+              </DropdownMenuCheckboxItem>
+              <DropdownMenuCheckboxItem onClick={() => exportData('excel')}>
+                Excel
+              </DropdownMenuCheckboxItem>
+              <DropdownMenuCheckboxItem onClick={() => exportData('png')}>
+                Image PNG
+              </DropdownMenuCheckboxItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 
       <Card className="p-4">
-        <ScrollArea className="h-[600px]">
-          <ResponsiveContainer width="100%" height={Math.max(400, processedTasks.length * 50)}>
-            <BarChart
-              data={processedTasks}
-              layout="vertical"
-              barSize={20}
-              margin={{ top: 20, right: 30, left: 150, bottom: 20 }}
-            >
-              {weekendLines.map(day => (
-                <ReferenceArea
-                  key={day}
-                  x1={day}
-                  x2={day + 1}
-                  fill="#f1f5f9"
-                  fillOpacity={0.5}
-                />
-              ))}
-              <XAxis
-                type="number"
-                domain={[
-                  Math.min(...processedTasks.map(t => t.start)) - 1,
-                  Math.max(...processedTasks.map(t => t.start + t.duration)) + 1
-                ]}
-                tickFormatter={(value) => format(addDays(startDate, value), 'dd/MM', { locale: fr })}
-                interval={0}
-              />
-              <YAxis
-                type="category"
-                dataKey="name"
-                width={140}
-                tick={({ x, y, payload }) => (
-                  <g transform={`translate(${x},${y})`}>
-                    <text
-                      x={-3}
-                      y={0}
-                      dy={4}
-                      textAnchor="end"
-                      fill="#374151"
-                      fontSize={12}
-                      className="font-medium"
-                    >
-                      {payload.value}
-                    </text>
-                  </g>
-                )}
-              />
-              <Tooltip content={<CustomTooltip />} />
-              <Bar
-                dataKey="duration"
-                background={{ fill: '#f1f5f9' }}
-                shape={(props: any) => {
-                  const { x, y, width, height, payload } = props;
-                  const color = COLORS[payload.status as keyof typeof COLORS];
-                  const isCritical = criticalPathDurations.get(payload.id) === maxCriticalDuration;
-                  const isHovered = hoveredTask === payload.id;
-                  const taskWidth = width * payload.duration * zoomLevel;
-                  const taskX = x + (payload.start * width * zoomLevel);
-
-                  return (
-                    <g
-                      onMouseEnter={() => setHoveredTask(payload.id)}
-                      onMouseLeave={() => setHoveredTask(null)}
-                    >
-                      {/* Barre principale */}
-                      <rect
-                        x={taskX}
-                        y={y}
-                        width={taskWidth}
-                        height={height}
-                        fill={color}
-                        opacity={0.2}
-                        strokeWidth={isCritical ? 2 : 1}
-                        stroke={isCritical ? '#ef4444' : color}
-                        className={cn(
-                          "transition-all duration-200",
-                          isHovered && "filter drop-shadow-lg"
-                        )}
-                      />
-                      {/* Barre de progression */}
-                      <rect
-                        x={taskX}
-                        y={y}
-                        width={taskWidth * (payload.completion / 100)}
-                        height={height}
-                        fill={color}
-                        className={cn(
-                          "transition-all duration-200",
-                          isHovered && "filter drop-shadow-lg"
-                        )}
-                      />
-                      {/* Motif de priorité */}
-                      {PRIORITY_PATTERNS[payload.priority as keyof typeof PRIORITY_PATTERNS] && (
-                        <path
-                          d={`M${taskX},${y} l${taskWidth},0`}
-                          strokeWidth={2}
-                          stroke={color}
-                          strokeDasharray={PRIORITY_PATTERNS[payload.priority as keyof typeof PRIORITY_PATTERNS]}
-                          strokeLinecap="round"
-                        />
-                      )}
-                      {/* Flèches de dépendance */}
-                      {payload.dependencies.map((depId: string) => {
-                        const source = processedTasks.find(t => t.id === depId);
-                        if (!source) return null;
-                        
-                        const sourceX = x + ((source.start + source.duration) * width * zoomLevel);
-                        const sourceY = y + (height / 2) + (source.y - payload.y) * height;
-                        const targetX = taskX;
-                        const targetY = y + height / 2;
-                        
-                        return (
-                          <g key={`${depId}-${payload.id}`}>
-                            <path
-                              d={`M${sourceX},${sourceY} C${(sourceX + targetX) / 2},${sourceY} ${(sourceX + targetX) / 2},${targetY} ${targetX},${targetY}`}
-                              stroke={isHovered ? '#64748b' : '#94a3b8'}
-                              strokeWidth={isHovered ? 2 : 1}
-                              fill="none"
-                              strokeDasharray="4"
-                              className="transition-all duration-200"
-                            />
-                            {/* Flèche */}
-                            <path
-                              d={`M${targetX},${targetY} l-5,-3 l0,6 z`}
-                              fill={isHovered ? '#64748b' : '#94a3b8'}
-                              className="transition-all duration-200"
-                            />
-                          </g>
-                        );
-                      })}
-                    </g>
-                  );
-                }}
-              />
-              {/* Ligne du jour actuel */}
-              <ReferenceLine
-                x={differenceInDays(new Date(), startDate)}
-                stroke="#dc2626"
-                strokeWidth={2}
-                strokeDasharray="3 3"
-              />
-            </BarChart>
-          </ResponsiveContainer>
+        <ScrollArea className="h-[600px] relative">
+          <div
+            ref={ganttContainer}
+            className="absolute inset-0"
+            style={{ width: '100%', height: '100%' }}
+          />
         </ScrollArea>
       </Card>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-        <Card className="p-3">
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 bg-[#e11d48]" />
-            <span>À faire</span>
-          </div>
-        </Card>
-        <Card className="p-3">
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 bg-[#f59e0b]" />
-            <span>En cours</span>
-          </div>
-        </Card>
-        <Card className="p-3">
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 bg-[#3b82f6]" />
-            <span>En révision</span>
-          </div>
-        </Card>
-        <Card className="p-3">
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 bg-[#22c55e]" />
-            <span>Terminé</span>
-          </div>
-        </Card>
-      </div>
+      <style jsx global>{`
+        .gantt_task_line {
+          border-radius: 4px;
+          transition: all 0.2s ease;
+        }
+
+        .gantt_task_line:hover {
+          box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+        }
+
+        .gantt_link_arrow {
+          border-color: #94a3b8;
+        }
+
+        .gantt_task_link {
+          stroke: #94a3b8;
+          stroke-dasharray: 4;
+        }
+
+        .priority-urgent .gantt_task_line {
+          background-color: ${PRIORITY_COLORS.urgent};
+        }
+
+        .priority-high .gantt_task_line {
+          background-color: ${PRIORITY_COLORS.high};
+        }
+
+        .priority-medium .gantt_task_line {
+          background-color: ${PRIORITY_COLORS.medium};
+        }
+
+        .priority-low .gantt_task_line {
+          background-color: ${PRIORITY_COLORS.low};
+        }
+
+        .task-completed .gantt_task_line {
+          border: 2px solid currentColor;
+        }
+
+        .gantt_grid_head_cell {
+          font-weight: 600;
+          color: #374151;
+        }
+
+        .gantt_grid_data {
+          color: #4b5563;
+        }
+
+        .gantt-progress-label {
+          color: white;
+          font-size: 12px;
+          font-weight: 500;
+        }
+      `}</style>
     </div>
   );
 };
