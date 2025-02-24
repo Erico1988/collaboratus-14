@@ -1,17 +1,13 @@
-
 import { useEffect, useRef, useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Task } from '@/types/task';
 import {
-  ZoomIn,
-  ZoomOut,
   ChevronLeft,
   ChevronRight,
   Filter,
-  Download,
-  Layers
+  Download
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -73,12 +69,10 @@ export const GanttChart = ({ tasks }: GanttChartProps) => {
   const [showCriticalPath, setShowCriticalPath] = useState(true);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [isInitialized, setIsInitialized] = useState(false);
+  const isFirstRender = useRef(true);
 
   useEffect(() => {
     if (!ganttContainer.current || !tasks.length) return;
-
-    // Ensure we clean up any previous instance
-    gantt.destructor();
 
     // Configuration initiale
     gantt.config.date_format = "%Y-%m-%d";
@@ -133,7 +127,7 @@ export const GanttChart = ({ tasks }: GanttChartProps) => {
 
     // Gestion des événements
     gantt.attachEvent("onTaskDrag", (id, mode, task, original) => {
-      return true; // Autoriser le drag & drop
+      return true;
     });
 
     gantt.attachEvent("onAfterTaskUpdate", (id, task) => {
@@ -148,6 +142,11 @@ export const GanttChart = ({ tasks }: GanttChartProps) => {
 
     // Initialisation
     try {
+      if (!isFirstRender.current) {
+        gantt.destructor();
+      }
+      isFirstRender.current = false;
+
       gantt.init(ganttContainer.current);
 
       // Chargement des données
@@ -178,27 +177,28 @@ export const GanttChart = ({ tasks }: GanttChartProps) => {
         links: ganttLinks
       });
 
-      // Attendre un tick pour s'assurer que le gantt est initialisé
-      setTimeout(() => {
-        if (gantt.getState()?.min_date) {
-          setCurrentDate(new Date(gantt.getState().min_date));
-        }
-        setIsInitialized(true);
-      }, 0);
+      // Update currentDate after initialization
+      const state = gantt.getState();
+      if (state?.min_date) {
+        setCurrentDate(new Date(state.min_date));
+      }
+      setIsInitialized(true);
 
     } catch (error) {
       console.error("Error initializing gantt chart:", error);
       toast.error("Erreur lors de l'initialisation du diagramme");
     }
 
-    // Nettoyage
+    // Cleanup function
     return () => {
-      try {
-        gantt.destructor();
-      } catch (error) {
-        console.error("Error destroying gantt chart:", error);
-      }
       setIsInitialized(false);
+      if (gantt.destructor && !isFirstRender.current) {
+        try {
+          gantt.clearAll();
+        } catch (error) {
+          console.error("Error clearing gantt data:", error);
+        }
+      }
     };
   }, [tasks]);
 
@@ -230,15 +230,14 @@ export const GanttChart = ({ tasks }: GanttChartProps) => {
   };
 
   // Export des données
-  const exportData = (format: 'pdf' | 'excel' | 'png') => {
+  const exportData = (exportType: 'pdf' | 'excel' | 'png') => {
     if (!isInitialized) return;
     
     try {
-      const now = new Date();
-      const dateStr = format(now, 'yyyy-MM-dd');
+      const dateStr = format(new Date(), 'yyyy-MM-dd');
       const filename = `procuretrack-planning-${dateStr}`;
       
-      switch (format) {
+      switch (exportType) {
         case 'pdf':
           gantt.exportToPDF({ filename: `${filename}.pdf` });
           break;
