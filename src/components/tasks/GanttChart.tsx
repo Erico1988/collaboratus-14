@@ -24,7 +24,7 @@ import {
 import { toast } from "sonner";
 import { gantt } from 'dhtmlx-gantt';
 import 'dhtmlx-gantt/codebase/dhtmlxgantt.css';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
 interface GanttChartProps {
@@ -71,9 +71,10 @@ export const GanttChart = ({ tasks }: GanttChartProps) => {
   const [showResources, setShowResources] = useState(true);
   const [showProgress, setShowProgress] = useState(true);
   const [showCriticalPath, setShowCriticalPath] = useState(true);
+  const [currentDate, setCurrentDate] = useState(new Date());
 
   useEffect(() => {
-    if (!ganttContainer.current) return;
+    if (!ganttContainer.current || !tasks.length) return;
 
     // Configuration initiale
     gantt.config.date_format = "%Y-%m-%d";
@@ -128,15 +129,17 @@ export const GanttChart = ({ tasks }: GanttChartProps) => {
 
     // Gestion des événements
     gantt.attachEvent("onTaskDrag", (id, mode, task, original) => {
-      console.log("Task being dragged:", id);
+      return true; // Autoriser le drag & drop
     });
 
     gantt.attachEvent("onAfterTaskUpdate", (id, task) => {
       toast.success(`Tâche "${task.text}" mise à jour`);
+      return true;
     });
 
     gantt.attachEvent("onLinkCreated", (link) => {
       toast.success("Nouvelle dépendance ajoutée");
+      return true;
     });
 
     // Initialisation
@@ -146,8 +149,8 @@ export const GanttChart = ({ tasks }: GanttChartProps) => {
     const ganttTasks = tasks.map(task => ({
       id: task.id,
       text: task.title,
-      start_date: new Date(task.createdAt),
-      end_date: new Date(task.dueDate),
+      start_date: parseISO(task.createdAt),
+      end_date: parseISO(task.dueDate),
       progress: task.status === 'done' ? 1 : task.status === 'in_progress' ? 0.5 : 0,
       priority: task.priority,
       status: task.status,
@@ -170,6 +173,11 @@ export const GanttChart = ({ tasks }: GanttChartProps) => {
       links: ganttLinks
     });
 
+    // Récupérer la date de début du projet après l'initialisation
+    if (gantt.getState()?.min_date) {
+      setCurrentDate(gantt.getState().min_date);
+    }
+
     // Nettoyage
     return () => {
       gantt.clearAll();
@@ -179,27 +187,22 @@ export const GanttChart = ({ tasks }: GanttChartProps) => {
   // Gestion du zoom
   const setZoom = (level: keyof typeof ZOOM_LEVELS) => {
     setCurrentZoom(level);
-    gantt.config.scales = ZOOM_LEVELS[level].scales;
+    gantt.config.scales = ZOOM_LEVELS[level].scales as any;
     gantt.render();
   };
 
   // Export des données
   const exportData = (format: 'pdf' | 'excel' | 'png') => {
+    const filename = `procuretrack-planning-${format(new Date(), 'yyyy-MM-dd')}`;
     switch (format) {
       case 'pdf':
-        gantt.exportToPDF({
-          name: `procuretrack-planning-${format(new Date(), 'yyyy-MM-dd')}.pdf`
-        });
+        gantt.exportToPDF({ name: `${filename}.pdf` });
         break;
       case 'excel':
-        gantt.exportToExcel({
-          name: `procuretrack-planning-${format(new Date(), 'yyyy-MM-dd')}.xlsx`
-        });
+        gantt.exportToExcel({ name: `${filename}.xlsx` });
         break;
       case 'png':
-        gantt.exportToPNG({
-          name: `procuretrack-planning-${format(new Date(), 'yyyy-MM-dd')}.png`
-        });
+        gantt.exportToPNG({ name: `${filename}.png` });
         break;
     }
   };
@@ -212,7 +215,7 @@ export const GanttChart = ({ tasks }: GanttChartProps) => {
             <ChevronLeft className="h-4 w-4" />
           </Button>
           <span className="text-sm font-medium">
-            {format(gantt.getState().min_date, 'MMMM yyyy', { locale: fr })}
+            {format(currentDate, 'MMMM yyyy', { locale: fr })}
           </span>
           <Button variant="outline" size="sm" onClick={() => gantt.scrollToDate(new Date())}>
             <ChevronRight className="h-4 w-4" />
@@ -295,7 +298,8 @@ export const GanttChart = ({ tasks }: GanttChartProps) => {
         </ScrollArea>
       </Card>
 
-      <style jsx global>{`
+      <style>
+        {`
         .gantt_task_line {
           border-radius: 4px;
           transition: all 0.2s ease;
@@ -348,7 +352,8 @@ export const GanttChart = ({ tasks }: GanttChartProps) => {
           font-size: 12px;
           font-weight: 500;
         }
-      `}</style>
+        `}
+      </style>
     </div>
   );
 };
