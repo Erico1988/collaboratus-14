@@ -87,32 +87,26 @@ export const KanbanBoard = () => {
   const [columns, setColumns] = useState<IKanbanColumn[]>(initialColumns);
 
   const handleAddColumn = () => {
-    // TODO: Implémenter l'ajout de colonne
     toast.info("Fonctionnalité en cours de développement");
   };
 
   const handleManageWorkflow = () => {
-    // TODO: Implémenter la gestion du workflow
     toast.info("Fonctionnalité en cours de développement");
   };
 
   const handleViewAnalytics = () => {
-    // TODO: Implémenter la vue des analyses
     toast.info("Fonctionnalité en cours de développement");
   };
 
   const handleEditColumn = (columnId: string) => {
-    // TODO: Implémenter l'édition de colonne
     toast.info("Fonctionnalité en cours de développement");
   };
 
   const handleDeleteColumn = (columnId: string) => {
-    // TODO: Implémenter la suppression de colonne
     toast.info("Fonctionnalité en cours de développement");
   };
 
   const handleManageAccess = (columnId: string) => {
-    // TODO: Implémenter la gestion des accès
     toast.info("Fonctionnalité en cours de développement");
   };
 
