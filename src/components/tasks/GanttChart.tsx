@@ -44,17 +44,20 @@ export const GanttChart = ({ tasks }: GanttChartProps) => {
         gantt.clearAll();
 
         // Parse new data
-        await new Promise<void>((resolve) => {
-          gantt.parse({ data, links });
-          // Give gantt chart time to process the data
-          setTimeout(resolve, 100);
-        });
+        gantt.parse({ data, links });
 
-        // Set initial date from the first task
+        // Une fois que les données sont chargées, on met à jour la date
         if (data.length > 0) {
           const firstTask = data[0];
-          gantt.showDate(firstTask.start_date);
-          setCurrentDate(firstTask.start_date);
+          // On attend que le rendu soit terminé avant de scroller
+          setTimeout(() => {
+            try {
+              gantt.showDate(firstTask.start_date);
+              setCurrentDate(firstTask.start_date);
+            } catch (error) {
+              console.error("Error showing date:", error);
+            }
+          }, 100);
         }
 
         gantt.attachEvent("onAfterTaskUpdate", (id, task) => {
@@ -74,7 +77,6 @@ export const GanttChart = ({ tasks }: GanttChartProps) => {
       }
     };
 
-    // Initialize when component mounts
     initGantt();
 
     return () => {
