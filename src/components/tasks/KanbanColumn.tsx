@@ -11,9 +11,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { MoreHorizontal, Users, BarChart2, Lock } from "lucide-react";
+import { AlertCircle, BarChart2, Lock, MoreHorizontal, Settings, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface KanbanColumnProps {
   column: IKanbanColumn;
@@ -32,6 +33,8 @@ export const KanbanColumn = ({
 }: KanbanColumnProps) => {
   const tasksInProgress = column.tasks.filter(task => !task.isBlocked).length;
   const blockedTasks = column.tasks.filter(task => task.isBlocked).length;
+  const hasWipLimit = column.wip?.max !== undefined;
+  const isOverWipLimit = hasWipLimit && tasksInProgress > (column.wip?.max || 0);
   
   return (
     <div
@@ -43,12 +46,40 @@ export const KanbanColumn = ({
         <div>
           <div className="flex items-center gap-2">
             <h3 className="font-semibold text-lg">{column.title}</h3>
-            <Badge variant="secondary">{column.tasks.length}</Badge>
+            <Badge variant={isOverWipLimit ? "destructive" : "secondary"}>
+              {tasksInProgress} / {column.wip?.max || "∞"}
+            </Badge>
           </div>
           <div className="flex gap-2 mt-2 text-sm text-muted-foreground">
-            <span>{tasksInProgress} actives</span>
+            {hasWipLimit && (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger>
+                    <div className="flex items-center gap-1">
+                      <Settings className="h-4 w-4" />
+                      <span>WIP: {tasksInProgress}/{column.wip?.max}</span>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Limite de travail en cours</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
             {blockedTasks > 0 && (
-              <span className="text-destructive">{blockedTasks} bloquées</span>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger>
+                    <div className="flex items-center gap-1 text-destructive">
+                      <AlertCircle className="h-4 w-4" />
+                      <span>{blockedTasks} bloquée(s)</span>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Tâches bloquées par des dépendances</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             )}
           </div>
         </div>
@@ -59,8 +90,8 @@ export const KanbanColumn = ({
               <MoreHorizontal className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuLabel>Options</DropdownMenuLabel>
+          <DropdownMenuContent align="end" className="w-56">
+            <DropdownMenuLabel>Options de la colonne</DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={() => onEditColumn(column.id)}>
               <Users className="h-4 w-4 mr-2" />
@@ -69,11 +100,28 @@ export const KanbanColumn = ({
             <DropdownMenuItem onClick={() => onManageAccess(column.id)}>
               <Lock className="h-4 w-4 mr-2" />
               Permissions
+              {column.roleAccess && (
+                <Badge variant="secondary" className="ml-auto">
+                  {column.roleAccess.length}
+                </Badge>
+              )}
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => onDeleteColumn(column.id)}>
+            <DropdownMenuItem>
               <BarChart2 className="h-4 w-4 mr-2" />
               Statistiques
             </DropdownMenuItem>
+            {column.automations && column.automations.length > 0 && (
+              <>
+                <DropdownMenuSeparator />
+                <DropdownMenuLabel>Automatisations</DropdownMenuLabel>
+                {column.automations.map((auto) => (
+                  <DropdownMenuItem key={auto.id}>
+                    <Settings className="h-4 w-4 mr-2" />
+                    {auto.trigger} → {auto.action}
+                  </DropdownMenuItem>
+                ))}
+              </>
+            )}
             <DropdownMenuSeparator />
             <DropdownMenuItem
               className="text-destructive"
@@ -100,11 +148,18 @@ export const KanbanColumn = ({
         {provided.placeholder}
       </div>
 
-      {column.automations && column.automations.length > 0 && (
+      {(column.policies?.requireApproval || column.automations?.length > 0) && (
         <div className="mt-4 pt-4 border-t border-border">
-          <p className="text-sm text-muted-foreground">
-            {column.automations.length} automation{column.automations.length > 1 ? 's' : ''} active{column.automations.length > 1 ? 's' : ''}
-          </p>
+          {column.policies?.requireApproval && (
+            <Badge variant="secondary" className="mb-2">
+              Approbation requise
+            </Badge>
+          )}
+          {column.automations && column.automations.length > 0 && (
+            <p className="text-sm text-muted-foreground">
+              {column.automations.length} automation{column.automations.length > 1 ? 's' : ''} active{column.automations.length > 1 ? 's' : ''}
+            </p>
+          )}
         </div>
       )}
     </div>

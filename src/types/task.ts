@@ -74,6 +74,15 @@ export interface KanbanColumn {
   tasks: Task[];
   roleAccess?: string[];
   automations?: TaskAutomation[];
+  wip?: {
+    min?: number;
+    max?: number;
+  };
+  policies?: {
+    requireApproval?: boolean;
+    autoAssignTo?: string[];
+    restrictedTo?: string[];
+  };
 }
 
 export interface TaskNotification {
@@ -94,3 +103,17 @@ export interface TaskFilter {
   search?: string;
 }
 
+export interface WorkflowAutomation {
+  id: string;
+  name: string;
+  description: string;
+  trigger: {
+    type: 'status_change' | 'deadline_approaching' | 'document_missing';
+    conditions: Record<string, any>[];
+  };
+  actions: {
+    type: 'change_status' | 'send_notification' | 'assign_user';
+    parameters: Record<string, any>;
+  }[];
+  enabled: boolean;
+}
