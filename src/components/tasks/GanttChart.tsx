@@ -24,40 +24,51 @@ export const GanttChart = ({ tasks }: GanttChartProps) => {
   useEffect(() => {
     if (!ganttContainer.current || !tasks.length) return;
 
-    try {
-      if (!isFirstRender.current) {
-        gantt.destructor();
+    const initGantt = () => {
+      try {
+        if (!isFirstRender.current) {
+          gantt.destructor();
+        }
+        isFirstRender.current = false;
+
+        configureGantt();
+        configureTemplates();
+
+        // Initialize gantt with the container
+        gantt.init(ganttContainer.current);
+
+        // Wait a bit for the layout to be ready
+        setTimeout(() => {
+          const { data, links } = convertTasksToGanttFormat(tasks);
+          gantt.parse({ data, links });
+
+          // Set initial date from the first task
+          if (data.length > 0) {
+            const firstTask = data[0];
+            gantt.showDate(firstTask.start_date);
+            setCurrentDate(firstTask.start_date);
+          }
+
+          gantt.attachEvent("onAfterTaskUpdate", (id, task) => {
+            toast.success(`Tâche "${task.text}" mise à jour`);
+            return true;
+          });
+
+          gantt.attachEvent("onLinkCreated", (link) => {
+            toast.success("Nouvelle dépendance ajoutée");
+            return true;
+          });
+
+          setIsInitialized(true);
+        }, 0);
+      } catch (error) {
+        console.error("Error initializing gantt chart:", error);
+        toast.error("Erreur lors de l'initialisation du diagramme");
       }
-      isFirstRender.current = false;
+    };
 
-      configureGantt();
-      configureTemplates();
-
-      gantt.init(ganttContainer.current);
-
-      const { data, links } = convertTasksToGanttFormat(tasks);
-      gantt.parse({ data, links });
-
-      const state = gantt.getState();
-      if (state?.min_date) {
-        setCurrentDate(new Date(state.min_date));
-      }
-      
-      gantt.attachEvent("onAfterTaskUpdate", (id, task) => {
-        toast.success(`Tâche "${task.text}" mise à jour`);
-        return true;
-      });
-
-      gantt.attachEvent("onLinkCreated", (link) => {
-        toast.success("Nouvelle dépendance ajoutée");
-        return true;
-      });
-
-      setIsInitialized(true);
-    } catch (error) {
-      console.error("Error initializing gantt chart:", error);
-      toast.error("Erreur lors de l'initialisation du diagramme");
-    }
+    // Initialize when component mounts
+    initGantt();
 
     return () => {
       setIsInitialized(false);
