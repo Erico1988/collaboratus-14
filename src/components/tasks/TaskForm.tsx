@@ -1,3 +1,4 @@
+
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -28,6 +29,7 @@ import { format } from "date-fns";
 const taskSchema = z.object({
   title: z.string().min(3, "Le titre doit contenir au moins 3 caractères"),
   description: z.string(),
+  marketId: z.string({ required_error: "Le marché est requis" }),
   priority: z.enum(["low", "medium", "high", "urgent"] as const),
   status: z.enum(["todo", "in_progress", "review", "done", "pending", "rejected", "assigned"] as const),
   dueDate: z.string(),
@@ -40,6 +42,7 @@ type TaskFormData = z.infer<typeof taskSchema>;
 
 interface TaskFormProps {
   task?: Task;
+  markets: Array<{ id: string; title: string }>; // Liste des marchés disponibles
   onSubmit: (data: TaskFormData) => Promise<void>;
   onCancel: () => void;
 }
@@ -61,7 +64,7 @@ const statuses: { value: TaskStatus; label: string }[] = [
   { value: "assigned", label: "Assigné" }
 ];
 
-export const TaskForm = ({ task, onSubmit, onCancel }: TaskFormProps) => {
+export const TaskForm = ({ task, markets, onSubmit, onCancel }: TaskFormProps) => {
   const { toast } = useToast();
   const form = useForm<TaskFormData>({
     resolver: zodResolver(taskSchema),
@@ -71,6 +74,7 @@ export const TaskForm = ({ task, onSubmit, onCancel }: TaskFormProps) => {
     } : {
       title: "",
       description: "",
+      marketId: "", // Champ obligatoire
       priority: "medium",
       status: "todo",
       dueDate: format(new Date(), "yyyy-MM-dd"),
@@ -98,6 +102,34 @@ export const TaskForm = ({ task, onSubmit, onCancel }: TaskFormProps) => {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+        <FormField
+          control={form.control}
+          name="marketId"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Marché</FormLabel>
+              <Select
+                onValueChange={field.onChange}
+                defaultValue={field.value}
+              >
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Sélectionner un marché" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {markets.map((market) => (
+                    <SelectItem key={market.id} value={market.id}>
+                      {market.title}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
         <FormField
           control={form.control}
           name="title"

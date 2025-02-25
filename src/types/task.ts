@@ -2,12 +2,26 @@
 export type TaskPriority = 'low' | 'medium' | 'high' | 'urgent';
 export type TaskStatus = 'todo' | 'in_progress' | 'review' | 'done' | 'pending' | 'rejected' | 'assigned';
 
+export interface Market {
+  id: string;
+  title: string;
+  reference: string;
+  description: string;
+  budget: number;
+  startDate: string;
+  endDate: string;
+  status: 'draft' | 'published' | 'in_progress' | 'awarded' | 'completed' | 'cancelled';
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface TaskTemplate {
   id: string;
   name: string;
   description: string;
   defaultPriority: TaskPriority;
   defaultStatus: TaskStatus;
+  marketId?: string; // ID du marché associé
   subtasks?: TaskTemplate[];
   attachments?: string[];
   automations?: TaskAutomation[];
@@ -51,6 +65,8 @@ export interface Task {
   dueDate: string;
   assigneeId?: string;
   assigneeName?: string;
+  marketId: string; // ID du marché associé (obligatoire)
+  marketTitle?: string; // Titre du marché pour l'affichage
   dependsOn?: string[];
   isBlocked?: boolean;
   createdAt: string;
@@ -99,6 +115,7 @@ export interface TaskFilter {
   status?: TaskStatus[];
   priority?: TaskPriority[];
   assignee?: string[];
+  marketId?: string; // Filtre par marché
   dueDate?: { start?: string; end?: string };
   search?: string;
 }
