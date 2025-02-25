@@ -4,6 +4,7 @@ import { KanbanColumn } from "./KanbanColumn";
 import { useState } from "react";
 import { Task, TaskStatus, KanbanColumn as IKanbanColumn } from "@/types/task";
 import { toast } from "sonner";
+import { KanbanHeader } from "./KanbanHeader";
 
 const initialColumns: IKanbanColumn[] = [
   {
@@ -20,6 +21,18 @@ const initialColumns: IKanbanColumn[] = [
         assigneeName: "Marie Durant",
         createdAt: "2024-03-15",
         updatedAt: "2024-03-15",
+        comments: [
+          {
+            id: "c1",
+            taskId: "1",
+            userId: "u1",
+            userName: "Jean Martin",
+            content: "N'oubliez pas d'inclure les spécifications techniques",
+            createdAt: "2024-03-15",
+            updatedAt: "2024-03-15"
+          }
+        ],
+        attachments: ["spec.pdf"]
       },
       {
         id: "2",
@@ -31,18 +44,37 @@ const initialColumns: IKanbanColumn[] = [
         assigneeName: "Jean Martin",
         createdAt: "2024-03-15",
         updatedAt: "2024-03-15",
+        dependsOn: ["1"],
+        isBlocked: true
       },
     ],
+    automations: [
+      {
+        id: "auto1",
+        trigger: "deadline_approaching",
+        action: "send_notification",
+        parameters: { days: 2 }
+      }
+    ]
   },
   {
     id: "in_progress",
     title: "En cours",
     tasks: [],
+    roleAccess: ["developer", "manager"]
   },
   {
     id: "review",
     title: "En révision",
     tasks: [],
+    automations: [
+      {
+        id: "auto2",
+        trigger: "status_change",
+        action: "change_status",
+        parameters: { after: "48h", newStatus: "done" }
+      }
+    ]
   },
   {
     id: "done",
@@ -53,6 +85,36 @@ const initialColumns: IKanbanColumn[] = [
 
 export const KanbanBoard = () => {
   const [columns, setColumns] = useState<IKanbanColumn[]>(initialColumns);
+
+  const handleAddColumn = () => {
+    // TODO: Implémenter l'ajout de colonne
+    toast.info("Fonctionnalité en cours de développement");
+  };
+
+  const handleManageWorkflow = () => {
+    // TODO: Implémenter la gestion du workflow
+    toast.info("Fonctionnalité en cours de développement");
+  };
+
+  const handleViewAnalytics = () => {
+    // TODO: Implémenter la vue des analyses
+    toast.info("Fonctionnalité en cours de développement");
+  };
+
+  const handleEditColumn = (columnId: string) => {
+    // TODO: Implémenter l'édition de colonne
+    toast.info("Fonctionnalité en cours de développement");
+  };
+
+  const handleDeleteColumn = (columnId: string) => {
+    // TODO: Implémenter la suppression de colonne
+    toast.info("Fonctionnalité en cours de développement");
+  };
+
+  const handleManageAccess = (columnId: string) => {
+    // TODO: Implémenter la gestion des accès
+    toast.info("Fonctionnalité en cours de développement");
+  };
 
   const onDragEnd = (result: any) => {
     if (!result.destination) return;
@@ -87,6 +149,7 @@ export const KanbanBoard = () => {
       const updatedTask = {
         ...removed,
         status: destination.droppableId as TaskStatus,
+        updatedAt: new Date().toISOString()
       };
       
       destTasks.splice(destination.index, 0, updatedTask);
@@ -102,24 +165,42 @@ export const KanbanBoard = () => {
       });
 
       setColumns(newColumns);
+      
+      // Vérifier et exécuter les automatisations
+      const automations = destColumn.automations;
+      if (automations?.length) {
+        toast.success(`${automations.length} automation(s) seront exécutée(s)`);
+      }
+
       toast.success(`Tâche déplacée vers ${destColumn.title}`);
     }
   };
 
   return (
-    <DragDropContext onDragEnd={onDragEnd}>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {columns.map((column) => (
-          <Droppable key={column.id} droppableId={column.id}>
-            {(provided) => (
-              <KanbanColumn
-                column={column}
-                provided={provided}
-              />
-            )}
-          </Droppable>
-        ))}
-      </div>
-    </DragDropContext>
+    <div className="space-y-6">
+      <KanbanHeader
+        onAddColumn={handleAddColumn}
+        onManageWorkflow={handleManageWorkflow}
+        onViewAnalytics={handleViewAnalytics}
+      />
+
+      <DragDropContext onDragEnd={onDragEnd}>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {columns.map((column) => (
+            <Droppable key={column.id} droppableId={column.id}>
+              {(provided) => (
+                <KanbanColumn
+                  column={column}
+                  provided={provided}
+                  onEditColumn={handleEditColumn}
+                  onDeleteColumn={handleDeleteColumn}
+                  onManageAccess={handleManageAccess}
+                />
+              )}
+            </Droppable>
+          ))}
+        </div>
+      </DragDropContext>
+    </div>
   );
 };

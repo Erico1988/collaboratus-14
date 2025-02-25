@@ -3,8 +3,16 @@ import { Card } from "@/components/ui/card";
 import { Task } from "@/types/task";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
-import { AlertCircle, Calendar, User } from "lucide-react";
+import { AlertCircle, Calendar, MessageSquare, Paperclip, User, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface TaskCardProps {
   task: Task;
@@ -27,6 +35,9 @@ const priorityLabels = {
 };
 
 export const TaskCard = ({ task, provided, isDragging }: TaskCardProps) => {
+  const hasComments = task.comments && task.comments.length > 0;
+  const hasAttachments = task.attachments && task.attachments.length > 0;
+
   return (
     <div
       ref={provided.innerRef}
@@ -73,6 +84,56 @@ export const TaskCard = ({ task, provided, isDragging }: TaskCardProps) => {
                 <span>Bloquée</span>
               </div>
             )}
+
+            <div className="flex items-center gap-4 pt-2">
+              {hasComments && (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger>
+                      <div className="flex items-center gap-1 text-muted-foreground">
+                        <MessageSquare className="h-4 w-4" />
+                        <span>{task.comments?.length}</span>
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>{task.comments?.length} commentaire(s)</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              )}
+
+              {hasAttachments && (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger>
+                      <div className="flex items-center gap-1 text-muted-foreground">
+                        <Paperclip className="h-4 w-4" />
+                        <span>{task.attachments?.length}</span>
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>{task.attachments?.length} pièce(s) jointe(s)</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              )}
+
+              {task.dependsOn && task.dependsOn.length > 0 && (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger>
+                      <div className="flex items-center gap-1 text-muted-foreground">
+                        <Users className="h-4 w-4" />
+                        <span>{task.dependsOn.length}</span>
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>{task.dependsOn.length} dépendance(s)</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              )}
+            </div>
           </div>
         </div>
       </Card>
