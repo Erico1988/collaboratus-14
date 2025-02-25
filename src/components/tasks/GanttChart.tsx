@@ -24,7 +24,7 @@ export const GanttChart = ({ tasks }: GanttChartProps) => {
   useEffect(() => {
     if (!ganttContainer.current || !tasks.length) return;
 
-    const initGantt = () => {
+    const initGantt = async () => {
       try {
         if (!isFirstRender.current) {
           gantt.destructor();
@@ -37,30 +37,37 @@ export const GanttChart = ({ tasks }: GanttChartProps) => {
         // Initialize gantt with the container
         gantt.init(ganttContainer.current);
 
-        // Wait a bit for the layout to be ready
-        setTimeout(() => {
-          const { data, links } = convertTasksToGanttFormat(tasks);
+        // Convert data before parsing
+        const { data, links } = convertTasksToGanttFormat(tasks);
+
+        // Clear existing data
+        gantt.clearAll();
+
+        // Parse new data
+        await new Promise<void>((resolve) => {
           gantt.parse({ data, links });
+          // Give gantt chart time to process the data
+          setTimeout(resolve, 100);
+        });
 
-          // Set initial date from the first task
-          if (data.length > 0) {
-            const firstTask = data[0];
-            gantt.showDate(firstTask.start_date);
-            setCurrentDate(firstTask.start_date);
-          }
+        // Set initial date from the first task
+        if (data.length > 0) {
+          const firstTask = data[0];
+          gantt.showDate(firstTask.start_date);
+          setCurrentDate(firstTask.start_date);
+        }
 
-          gantt.attachEvent("onAfterTaskUpdate", (id, task) => {
-            toast.success(`Tâche "${task.text}" mise à jour`);
-            return true;
-          });
+        gantt.attachEvent("onAfterTaskUpdate", (id, task) => {
+          toast.success(`Tâche "${task.text}" mise à jour`);
+          return true;
+        });
 
-          gantt.attachEvent("onLinkCreated", (link) => {
-            toast.success("Nouvelle dépendance ajoutée");
-            return true;
-          });
+        gantt.attachEvent("onLinkCreated", (link) => {
+          toast.success("Nouvelle dépendance ajoutée");
+          return true;
+        });
 
-          setIsInitialized(true);
-        }, 0);
+        setIsInitialized(true);
       } catch (error) {
         console.error("Error initializing gantt chart:", error);
         toast.error("Erreur lors de l'initialisation du diagramme");
@@ -71,14 +78,15 @@ export const GanttChart = ({ tasks }: GanttChartProps) => {
     initGantt();
 
     return () => {
-      setIsInitialized(false);
       if (gantt.destructor && !isFirstRender.current) {
         try {
           gantt.clearAll();
+          gantt.destructor();
         } catch (error) {
-          console.error("Error clearing gantt data:", error);
+          console.error("Error cleaning up gantt chart:", error);
         }
       }
+      setIsInitialized(false);
     };
   }, [tasks]);
 

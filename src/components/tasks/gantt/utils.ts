@@ -6,7 +6,7 @@ import { parseISO } from 'date-fns';
 import { STATUS_COLORS } from './constants';
 
 export const configureGantt = () => {
-  gantt.config.date_format = "%Y-%m-%d";
+  gantt.config.date_format = "%Y-%m-%d %H:%i";
   gantt.config.drag_links = true;
   gantt.config.drag_progress = true;
   gantt.config.drag_resize = true;
@@ -52,16 +52,27 @@ export const configureTemplates = () => {
 };
 
 export const convertTasksToGanttFormat = (tasks: Task[]): { data: GanttTask[], links: GanttLink[] } => {
-  const ganttTasks = tasks.map(task => ({
-    id: task.id,
-    text: task.title,
-    start_date: parseISO(task.createdAt),
-    end_date: parseISO(task.dueDate),
-    progress: task.status === 'done' ? 1 : task.status === 'in_progress' ? 0.5 : 0,
-    priority: task.priority,
-    status: task.status,
-    assignee: task.assigneeName
-  }));
+  const ganttTasks = tasks.map(task => {
+    // Ensure dates are properly formatted for the gantt chart
+    const startDate = new Date(task.createdAt);
+    const endDate = new Date(task.dueDate);
+    
+    // Add a minimum duration of 1 day if start and end dates are the same
+    if (startDate.getTime() === endDate.getTime()) {
+      endDate.setDate(endDate.getDate() + 1);
+    }
+
+    return {
+      id: task.id,
+      text: task.title,
+      start_date: startDate,
+      end_date: endDate,
+      progress: task.status === 'done' ? 1 : task.status === 'in_progress' ? 0.5 : 0,
+      priority: task.priority,
+      status: task.status,
+      assignee: task.assigneeName
+    };
+  });
 
   const ganttLinks = tasks
     .filter(task => task.dependsOn)
@@ -109,7 +120,7 @@ export const getGanttStyles = () => `
     color: #4b5563;
   }
 
-  .gantt-progress-label {
+  .gantt_progress_label {
     color: white;
     font-size: 12px;
     font-weight: 500;
