@@ -5,6 +5,8 @@ import { useState } from "react";
 import { Task, TaskStatus, KanbanColumn as IKanbanColumn } from "@/types/task";
 import { toast } from "sonner";
 import { KanbanHeader } from "./KanbanHeader";
+import { ColumnDialog } from "./ColumnDialog";
+import { WorkflowDialog } from "./WorkflowDialog";
 
 const initialColumns: IKanbanColumn[] = [
   {
@@ -85,13 +87,17 @@ const initialColumns: IKanbanColumn[] = [
 
 export const KanbanBoard = () => {
   const [columns, setColumns] = useState<IKanbanColumn[]>(initialColumns);
+  const [columnDialogOpen, setColumnDialogOpen] = useState(false);
+  const [workflowDialogOpen, setWorkflowDialogOpen] = useState(false);
+  const [selectedColumn, setSelectedColumn] = useState<IKanbanColumn | undefined>();
 
   const handleAddColumn = () => {
-    toast.info("Fonctionnalité en cours de développement");
+    setSelectedColumn(undefined);
+    setColumnDialogOpen(true);
   };
 
   const handleManageWorkflow = () => {
-    toast.info("Fonctionnalité en cours de développement");
+    setWorkflowDialogOpen(true);
   };
 
   const handleViewAnalytics = () => {
@@ -99,15 +105,55 @@ export const KanbanBoard = () => {
   };
 
   const handleEditColumn = (columnId: string) => {
-    toast.info("Fonctionnalité en cours de développement");
+    const column = columns.find((col) => col.id === columnId);
+    if (column) {
+      setSelectedColumn(column);
+      setColumnDialogOpen(true);
+    }
   };
 
   const handleDeleteColumn = (columnId: string) => {
-    toast.info("Fonctionnalité en cours de développement");
+    if (confirm("Êtes-vous sûr de vouloir supprimer cette colonne ?")) {
+      const newColumns = columns.filter((col) => col.id !== columnId);
+      setColumns(newColumns);
+      toast.success("Colonne supprimée avec succès");
+    }
   };
 
   const handleManageAccess = (columnId: string) => {
     toast.info("Fonctionnalité en cours de développement");
+  };
+
+  const handleColumnSubmit = (data: any) => {
+    if (selectedColumn) {
+      // Mise à jour d'une colonne existante
+      const updatedColumns = columns.map((col) =>
+        col.id === selectedColumn.id
+          ? { ...col, ...data, id: col.id }
+          : col
+      );
+      setColumns(updatedColumns);
+      toast.success("Colonne mise à jour avec succès");
+    } else {
+      // Création d'une nouvelle colonne
+      const newColumn: IKanbanColumn = {
+        id: `column-${Date.now()}` as TaskStatus,
+        tasks: [],
+        ...data
+      };
+      setColumns([...columns, newColumn]);
+      toast.success("Colonne créée avec succès");
+    }
+  };
+
+  const handleWorkflowSubmit = (data: any) => {
+    // Mise à jour des automatisations du workflow
+    const updatedColumns = columns.map(col => ({
+      ...col,
+      automations: data.automations[col.id] || []
+    }));
+    setColumns(updatedColumns);
+    toast.success("Workflow mis à jour avec succès");
   };
 
   const onDragEnd = (result: any) => {
@@ -195,6 +241,20 @@ export const KanbanBoard = () => {
           ))}
         </div>
       </DragDropContext>
+
+      <ColumnDialog
+        open={columnDialogOpen}
+        onOpenChange={setColumnDialogOpen}
+        onSubmit={handleColumnSubmit}
+        column={selectedColumn}
+      />
+
+      <WorkflowDialog
+        open={workflowDialogOpen}
+        onOpenChange={setWorkflowDialogOpen}
+        onSubmit={handleWorkflowSubmit}
+        columns={columns}
+      />
     </div>
   );
 };
