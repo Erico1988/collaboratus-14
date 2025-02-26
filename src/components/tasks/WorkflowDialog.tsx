@@ -14,8 +14,6 @@ import {
   FormItem,
   FormLabel,
 } from "@/components/ui/form";
-import { useForm } from "react-hook-form";
-import { KanbanColumn, TaskAutomation } from "@/types/task";
 import { Card } from "@/components/ui/card";
 import { Plus, Settings, Trash } from "lucide-react";
 import {
@@ -25,7 +23,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
+import { useForm } from "react-hook-form";
+import { KanbanColumn, TaskAutomation } from "@/types/task";
 
 interface WorkflowDialogProps {
   open: boolean;
@@ -34,13 +33,17 @@ interface WorkflowDialogProps {
   columns: KanbanColumn[];
 }
 
+interface FormValues {
+  automations: Record<string, TaskAutomation[]>;
+}
+
 export function WorkflowDialog({
   open,
   onOpenChange,
   onSubmit,
   columns,
 }: WorkflowDialogProps) {
-  const form = useForm({
+  const form = useForm<FormValues>({
     defaultValues: {
       automations: columns.reduce((acc, col) => ({
         ...acc,
@@ -51,21 +54,27 @@ export function WorkflowDialog({
 
   const addAutomation = (columnId: string) => {
     const currentAutomations = form.getValues().automations[columnId] || [];
-    form.setValue(`automations.${columnId}`, [
-      ...currentAutomations,
-      {
-        id: `auto-${Date.now()}`,
-        trigger: "status_change",
-        action: "send_notification",
-        parameters: {},
-      },
-    ]);
+    form.setValue("automations", {
+      ...form.getValues().automations,
+      [columnId]: [
+        ...currentAutomations,
+        {
+          id: `auto-${Date.now()}`,
+          trigger: "status_change",
+          action: "send_notification",
+          parameters: {},
+        },
+      ],
+    });
   };
 
   const removeAutomation = (columnId: string, index: number) => {
-    const currentAutomations = form.getValues().automations[columnId];
-    currentAutomations.splice(index, 1);
-    form.setValue(`automations.${columnId}`, currentAutomations);
+    const columnAutomations = [...(form.getValues().automations[columnId] || [])];
+    columnAutomations.splice(index, 1);
+    form.setValue("automations", {
+      ...form.getValues().automations,
+      [columnId]: columnAutomations,
+    });
   };
 
   return (
@@ -103,7 +112,7 @@ export function WorkflowDialog({
                               <FormLabel>Déclencheur</FormLabel>
                               <Select
                                 onValueChange={field.onChange}
-                                defaultValue={field.value}
+                                value={field.value}
                               >
                                 <FormControl>
                                   <SelectTrigger>
@@ -134,7 +143,7 @@ export function WorkflowDialog({
                               <FormLabel>Action</FormLabel>
                               <Select
                                 onValueChange={field.onChange}
-                                defaultValue={field.value}
+                                value={field.value}
                               >
                                 <FormControl>
                                   <SelectTrigger>

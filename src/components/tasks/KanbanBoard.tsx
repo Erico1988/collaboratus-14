@@ -17,10 +17,12 @@ const initialColumns: IKanbanColumn[] = [
         id: "1",
         title: "Analyser les besoins",
         description: "Définir les spécifications détaillées du projet",
-        status: "todo",
+        status: "todo" as TaskStatus,
         priority: "high",
         dueDate: "2024-04-01",
         assigneeName: "Marie Durant",
+        marketId: "1", // Ajout du marketId obligatoire
+        marketTitle: "Développement ProcureTrack",
         createdAt: "2024-03-15",
         updatedAt: "2024-03-15",
         comments: [
@@ -40,10 +42,12 @@ const initialColumns: IKanbanColumn[] = [
         id: "2",
         title: "Préparer l'appel d'offres",
         description: "Rédiger le cahier des charges",
-        status: "todo",
+        status: "todo" as TaskStatus,
         priority: "medium",
         dueDate: "2024-04-15",
         assigneeName: "Jean Martin",
+        marketId: "1", // Ajout du marketId obligatoire
+        marketTitle: "Développement ProcureTrack",
         createdAt: "2024-03-15",
         updatedAt: "2024-03-15",
         dependsOn: ["1"],
