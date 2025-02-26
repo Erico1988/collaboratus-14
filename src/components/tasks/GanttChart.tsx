@@ -1,4 +1,3 @@
-
 import { useEffect, useRef, useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -10,6 +9,19 @@ import { GanttToolbar } from './gantt/GanttToolbar';
 import { configureGantt, configureTemplates, convertTasksToGanttFormat, getGanttStyles } from './gantt/utils';
 import { GanttChartProps, ZoomLevel, ExportType } from './gantt/types';
 import { ZOOM_LEVELS } from './gantt/constants';
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
+
+const markets = [
+  { id: "1", title: "Développement ProcureTrack" },
+  { id: "2", title: "Maintenance Infrastructure" },
+];
 
 export const GanttChart = ({ tasks }: GanttChartProps) => {
   const ganttContainer = useRef<HTMLDivElement>(null);
@@ -18,11 +30,16 @@ export const GanttChart = ({ tasks }: GanttChartProps) => {
   const [showProgress, setShowProgress] = useState(true);
   const [showCriticalPath, setShowCriticalPath] = useState(true);
   const [currentDate, setCurrentDate] = useState(new Date());
+  const [selectedMarketId, setSelectedMarketId] = useState<string>("");
   const [isInitialized, setIsInitialized] = useState(false);
   const isFirstRender = useRef(true);
 
+  const filteredTasks = selectedMarketId 
+    ? tasks.filter(task => task.marketId === selectedMarketId)
+    : tasks;
+
   useEffect(() => {
-    if (!ganttContainer.current || !tasks.length) return;
+    if (!ganttContainer.current || !filteredTasks.length) return;
 
     const initGantt = async () => {
       try {
@@ -34,22 +51,15 @@ export const GanttChart = ({ tasks }: GanttChartProps) => {
         configureGantt();
         configureTemplates();
 
-        // Initialize gantt with the container
         gantt.init(ganttContainer.current);
-
-        // Convert data before parsing
-        const { data, links } = convertTasksToGanttFormat(tasks);
-
-        // Clear existing data
+        
+        const { data, links } = convertTasksToGanttFormat(filteredTasks);
+        
         gantt.clearAll();
-
-        // Parse new data
         gantt.parse({ data, links });
 
-        // Une fois que les données sont chargées, on met à jour la date
         if (data.length > 0) {
           const firstTask = data[0];
-          // On attend que le rendu soit terminé avant de scroller
           setTimeout(() => {
             try {
               gantt.showDate(firstTask.start_date);
@@ -90,7 +100,7 @@ export const GanttChart = ({ tasks }: GanttChartProps) => {
       }
       setIsInitialized(false);
     };
-  }, [tasks]);
+  }, [filteredTasks]);
 
   const handleZoomChange = (level: ZoomLevel) => {
     if (!isInitialized) return;
@@ -142,19 +152,40 @@ export const GanttChart = ({ tasks }: GanttChartProps) => {
 
   return (
     <div className="space-y-4">
-      <GanttToolbar
-        currentDate={currentDate}
-        isInitialized={isInitialized}
-        showResources={showResources}
-        showProgress={showProgress}
-        showCriticalPath={showCriticalPath}
-        onZoomChange={handleZoomChange}
-        onNavigate={handleNavigate}
-        onResourcesToggle={setShowResources}
-        onProgressToggle={setShowProgress}
-        onCriticalPathToggle={setShowCriticalPath}
-        onExport={handleExport}
-      />
+      <div className="flex justify-between items-center">
+        <GanttToolbar
+          currentDate={currentDate}
+          isInitialized={isInitialized}
+          showResources={showResources}
+          showProgress={showProgress}
+          showCriticalPath={showCriticalPath}
+          onZoomChange={handleZoomChange}
+          onNavigate={handleNavigate}
+          onResourcesToggle={setShowResources}
+          onProgressToggle={setShowProgress}
+          onCriticalPathToggle={setShowCriticalPath}
+          onExport={handleExport}
+        />
+        <div className="w-[250px]">
+          <Label htmlFor="market-filter">Filtrer par marché</Label>
+          <Select
+            value={selectedMarketId}
+            onValueChange={setSelectedMarketId}
+          >
+            <SelectTrigger id="market-filter">
+              <SelectValue placeholder="Tous les marchés" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="">Tous les marchés</SelectItem>
+              {markets.map(market => (
+                <SelectItem key={market.id} value={market.id}>
+                  {market.title}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
 
       <Card className="p-4">
         <ScrollArea className="h-[600px] relative">

@@ -7,6 +7,20 @@ import { toast } from "sonner";
 import { KanbanHeader } from "./KanbanHeader";
 import { ColumnDialog } from "./ColumnDialog";
 import { WorkflowDialog } from "./WorkflowDialog";
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
+
+// Mock data for markets (to be replaced with real data)
+const markets = [
+  { id: "1", title: "Développement ProcureTrack" },
+  { id: "2", title: "Maintenance Infrastructure" },
+];
 
 const initialColumns: IKanbanColumn[] = [
   {
@@ -21,7 +35,7 @@ const initialColumns: IKanbanColumn[] = [
         priority: "high",
         dueDate: "2024-04-01",
         assigneeName: "Marie Durant",
-        marketId: "1", // Ajout du marketId obligatoire
+        marketId: "1",
         marketTitle: "Développement ProcureTrack",
         createdAt: "2024-03-15",
         updatedAt: "2024-03-15",
@@ -94,6 +108,14 @@ export const KanbanBoard = () => {
   const [columnDialogOpen, setColumnDialogOpen] = useState(false);
   const [workflowDialogOpen, setWorkflowDialogOpen] = useState(false);
   const [selectedColumn, setSelectedColumn] = useState<IKanbanColumn | undefined>();
+  const [selectedMarketId, setSelectedMarketId] = useState<string>("");
+
+  const filteredColumns = columns.map(column => ({
+    ...column,
+    tasks: column.tasks.filter(task => 
+      !selectedMarketId || task.marketId === selectedMarketId
+    )
+  }));
 
   const handleAddColumn = () => {
     setSelectedColumn(undefined);
@@ -222,23 +244,46 @@ export const KanbanBoard = () => {
 
   return (
     <div className="space-y-6">
-      <KanbanHeader
-        onAddColumn={handleAddColumn}
-        onManageWorkflow={handleManageWorkflow}
-        onViewAnalytics={handleViewAnalytics}
-      />
+      <div className="flex justify-between items-center mb-6">
+        <KanbanHeader
+          onAddColumn={handleAddColumn}
+          onManageWorkflow={() => setWorkflowDialogOpen(true)}
+          onViewAnalytics={() => toast.info("Fonctionnalité en cours de développement")}
+        />
+        <div className="flex items-center gap-4">
+          <div className="w-[250px]">
+            <Label htmlFor="market-filter">Filtrer par marché</Label>
+            <Select
+              value={selectedMarketId}
+              onValueChange={setSelectedMarketId}
+            >
+              <SelectTrigger id="market-filter">
+                <SelectValue placeholder="Tous les marchés" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">Tous les marchés</SelectItem>
+                {markets.map(market => (
+                  <SelectItem key={market.id} value={market.id}>
+                    {market.title}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      </div>
 
       <DragDropContext onDragEnd={onDragEnd}>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {columns.map((column) => (
+          {filteredColumns.map((column) => (
             <Droppable key={column.id} droppableId={column.id}>
               {(provided) => (
                 <KanbanColumn
                   column={column}
                   provided={provided}
-                  onEditColumn={handleEditColumn}
-                  onDeleteColumn={handleDeleteColumn}
-                  onManageAccess={handleManageAccess}
+                  onEditColumn={() => handleEditColumn(column.id)}
+                  onDeleteColumn={() => handleDeleteColumn(column.id)}
+                  onManageAccess={() => handleManageAccess(column.id)}
                 />
               )}
             </Droppable>
