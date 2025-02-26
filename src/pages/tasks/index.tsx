@@ -1,4 +1,3 @@
-
 import { MainLayout } from "@/components/layout/MainLayout";
 import { KanbanBoard } from "@/components/tasks/KanbanBoard";
 import { GanttChart } from "@/components/tasks/GanttChart";
@@ -27,7 +26,9 @@ const procureTrackTasks: Task[] = [
     dueDate: "2024-03-15",
     createdAt: "2024-03-01",
     updatedAt: "2024-03-01",
-    assigneeName: "Sophie Martin"
+    assigneeName: "Sophie Martin",
+    marketId: "1",
+    marketTitle: "Développement ProcureTrack"
   },
   {
     id: "1.2",
@@ -250,7 +251,11 @@ const procureTrackTasks: Task[] = [
     updatedAt: "2024-08-20",
     assigneeName: "Julie Chen"
   }
-];
+].map(task => ({
+  ...task,
+  marketId: task.marketId || "1",
+  marketTitle: task.marketTitle || "Développement ProcureTrack"
+}));
 
 const TasksPage = () => {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
