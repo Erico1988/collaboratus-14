@@ -1,3 +1,4 @@
+
 import { MainLayout } from "@/components/layout/MainLayout";
 import { KanbanBoard } from "@/components/tasks/KanbanBoard";
 import { GanttChart } from "@/components/tasks/GanttChart";
@@ -6,7 +7,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { TaskDialog } from "@/components/tasks/TaskDialog";
-import { Task } from "@/types/task";
+import { Task, TaskStatus, TaskPriority } from "@/types/task";
 import {
   Tabs,
   TabsContent,
