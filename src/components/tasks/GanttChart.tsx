@@ -1,27 +1,14 @@
+
 import { useEffect, useRef, useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { toast } from "sonner";
 import { gantt } from 'dhtmlx-gantt';
 import 'dhtmlx-gantt/codebase/dhtmlxgantt.css';
-import { format } from 'date-fns';
 import { GanttToolbar } from './gantt/GanttToolbar';
 import { configureGantt, configureTemplates, convertTasksToGanttFormat, getGanttStyles } from './gantt/utils';
 import { GanttChartProps, ZoomLevel, ExportType } from './gantt/types';
-import { ZOOM_LEVELS } from './gantt/constants';
-import { 
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Label } from "@/components/ui/label";
-
-const markets = [
-  { id: "1", title: "Développement ProcureTrack" },
-  { id: "2", title: "Maintenance Infrastructure" },
-];
+import { MarketFilter } from './filters/MarketFilter';
 
 export const GanttChart = ({ tasks }: GanttChartProps) => {
   const ganttContainer = useRef<HTMLDivElement>(null);
@@ -70,16 +57,6 @@ export const GanttChart = ({ tasks }: GanttChartProps) => {
           }, 100);
         }
 
-        gantt.attachEvent("onAfterTaskUpdate", (id, task) => {
-          toast.success(`Tâche "${task.text}" mise à jour`);
-          return true;
-        });
-
-        gantt.attachEvent("onLinkCreated", (link) => {
-          toast.success("Nouvelle dépendance ajoutée");
-          return true;
-        });
-
         setIsInitialized(true);
       } catch (error) {
         console.error("Error initializing gantt chart:", error);
@@ -103,37 +80,23 @@ export const GanttChart = ({ tasks }: GanttChartProps) => {
   }, [filteredTasks]);
 
   const handleZoomChange = (level: ZoomLevel) => {
-    if (!isInitialized) return;
-    try {
-      setCurrentZoom(level);
-      gantt.config.scales = ZOOM_LEVELS[level].scales as any;
-      gantt.render();
-    } catch (error) {
-      console.error("Error setting zoom:", error);
-      toast.error("Erreur lors du changement de zoom");
-    }
+    setCurrentZoom(level);
   };
 
   const handleNavigate = (direction: 'prev' | 'next') => {
-    if (!isInitialized) return;
-    try {
-      const newDate = new Date(currentDate);
-      newDate.setDate(newDate.getDate() + (direction === 'next' ? 7 : -7));
-      setCurrentDate(newDate);
-      gantt.showDate(newDate);
-    } catch (error) {
-      console.error("Error navigating date:", error);
-      toast.error("Erreur lors de la navigation");
-    }
+    const newDate = new Date(currentDate);
+    newDate.setDate(newDate.getDate() + (direction === 'next' ? 7 : -7));
+    setCurrentDate(newDate);
+    gantt.showDate(newDate);
   };
 
-  const handleExport = (exportType: ExportType) => {
+  const handleExport = (type: ExportType) => {
     if (!isInitialized) return;
+
     try {
-      const dateStr = format(new Date(), 'yyyy-MM-dd');
-      const filename = `procuretrack-planning-${dateStr}`;
+      const filename = `gantt-export-${new Date().toISOString().split('T')[0]}`;
       
-      switch (exportType) {
+      switch (type) {
         case 'pdf':
           gantt.exportToPDF({ filename: `${filename}.pdf` });
           break;
@@ -145,7 +108,7 @@ export const GanttChart = ({ tasks }: GanttChartProps) => {
           break;
       }
     } catch (error) {
-      console.error("Error exporting data:", error);
+      console.error("Error exporting gantt:", error);
       toast.error("Erreur lors de l'export");
     }
   };
@@ -166,25 +129,10 @@ export const GanttChart = ({ tasks }: GanttChartProps) => {
           onCriticalPathToggle={setShowCriticalPath}
           onExport={handleExport}
         />
-        <div className="w-[250px]">
-          <Label htmlFor="market-filter">Filtrer par marché</Label>
-          <Select
-            value={selectedMarketId}
-            onValueChange={setSelectedMarketId}
-          >
-            <SelectTrigger id="market-filter">
-              <SelectValue placeholder="Tous les marchés" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="">Tous les marchés</SelectItem>
-              {markets.map(market => (
-                <SelectItem key={market.id} value={market.id}>
-                  {market.title}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+        <MarketFilter
+          selectedMarketId={selectedMarketId}
+          onMarketChange={setSelectedMarketId}
+        />
       </div>
 
       <Card className="p-4">
