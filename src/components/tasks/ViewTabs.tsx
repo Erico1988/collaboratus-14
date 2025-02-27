@@ -23,7 +23,7 @@ export const ViewTabs = ({ tasks }: ViewTabsProps) => {
         <TabsTrigger value="table">Tableau</TabsTrigger>
       </TabsList>
       <TabsContent value="kanban">
-        <KanbanBoard />
+        <KanbanBoard tasks={tasks} />
       </TabsContent>
       <TabsContent value="gantt">
         <GanttChart tasks={tasks} />
