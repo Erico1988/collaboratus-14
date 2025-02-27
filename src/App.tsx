@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import TasksPage from "./pages/tasks";
+import MarketsPage from "./pages/markets";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -24,6 +25,7 @@ const App = () => (
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/tasks" element={<TasksPage />} />
+          <Route path="/markets" element={<MarketsPage />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
