@@ -59,13 +59,41 @@ export const initialColumns: KanbanColumn[] = [
   {
     id: "in_progress",
     title: "En cours",
-    tasks: [],
+    tasks: [
+      {
+        id: "3",
+        title: "Développement du backend",
+        description: "Implémenter l'API REST",
+        status: "in_progress" as TaskStatus,
+        priority: "high",
+        dueDate: "2024-05-01",
+        assigneeName: "Thomas Dubois",
+        marketId: "1",
+        marketTitle: "Développement ProcureTrack",
+        createdAt: "2024-03-20",
+        updatedAt: "2024-03-20"
+      }
+    ],
     roleAccess: ["developer", "manager"]
   },
   {
     id: "review",
     title: "En révision",
-    tasks: [],
+    tasks: [
+      {
+        id: "4",
+        title: "Revue de code",
+        description: "Revue du code frontend",
+        status: "review" as TaskStatus,
+        priority: "medium",
+        dueDate: "2024-04-20",
+        assigneeName: "Sophie Martin",
+        marketId: "1",
+        marketTitle: "Développement ProcureTrack",
+        createdAt: "2024-03-25",
+        updatedAt: "2024-03-25"
+      }
+    ],
     automations: [
       {
         id: "auto2",
@@ -78,6 +106,20 @@ export const initialColumns: KanbanColumn[] = [
   {
     id: "done",
     title: "Terminé",
-    tasks: [],
+    tasks: [
+      {
+        id: "5",
+        title: "Configuration initiale",
+        description: "Mise en place de l'environnement de développement",
+        status: "done" as TaskStatus,
+        priority: "high",
+        dueDate: "2024-03-10",
+        assigneeName: "Pierre Dupont",
+        marketId: "1",
+        marketTitle: "Développement ProcureTrack",
+        createdAt: "2024-03-01",
+        updatedAt: "2024-03-10"
+      }
+    ],
   },
 ];

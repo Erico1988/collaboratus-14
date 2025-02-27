@@ -2,7 +2,7 @@
 import { DragDropContext, Droppable } from "@hello-pangea/dnd";
 import { KanbanColumn } from "./KanbanColumn";
 import { useState } from "react";
-import { KanbanColumn as IKanbanColumn, TaskStatus } from "@/types/task";
+import { KanbanColumn as IKanbanColumn, Task, TaskStatus } from "@/types/task";
 import { toast } from "sonner";
 import { KanbanHeader } from "./KanbanHeader";
 import { ColumnDialog } from "./ColumnDialog";
@@ -10,17 +10,23 @@ import { WorkflowDialog } from "./WorkflowDialog";
 import { MarketFilter } from "./filters/MarketFilter";
 import { initialColumns } from "@/data/initialKanbanData";
 
-export const KanbanBoard = () => {
+interface KanbanBoardProps {
+  tasks: Task[];
+}
+
+export const KanbanBoard = ({ tasks }: KanbanBoardProps) => {
   const [columns, setColumns] = useState<IKanbanColumn[]>(initialColumns);
   const [columnDialogOpen, setColumnDialogOpen] = useState(false);
   const [workflowDialogOpen, setWorkflowDialogOpen] = useState(false);
   const [selectedColumn, setSelectedColumn] = useState<IKanbanColumn | undefined>();
   const [selectedMarketId, setSelectedMarketId] = useState<string>("");
 
+  // Filtrer les colonnes en fonction du marché sélectionné
   const filteredColumns = columns.map(column => ({
     ...column,
-    tasks: column.tasks.filter(task => 
-      !selectedMarketId || task.marketId === selectedMarketId
+    tasks: tasks.filter(task => 
+      (!selectedMarketId || task.marketId === selectedMarketId) &&
+      task.status === column.id
     )
   }));
 
@@ -142,7 +148,7 @@ export const KanbanBoard = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex justify-between items-center">
         <KanbanHeader
           onAddColumn={handleAddColumn}
           onManageWorkflow={() => setWorkflowDialogOpen(true)}
