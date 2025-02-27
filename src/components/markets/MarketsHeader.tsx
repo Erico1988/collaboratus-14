@@ -2,7 +2,11 @@
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 
-export const MarketsHeader = () => {
+interface MarketsHeaderProps {
+  onNewMarket: () => void;
+}
+
+export const MarketsHeader = ({ onNewMarket }: MarketsHeaderProps) => {
   return (
     <div className="flex items-center justify-between">
       <div>
@@ -11,7 +15,7 @@ export const MarketsHeader = () => {
           Gérez vos marchés et leurs détails
         </p>
       </div>
-      <Button>
+      <Button onClick={onNewMarket}>
         <Plus className="mr-2 h-4 w-4" />
         Nouveau marché
       </Button>
