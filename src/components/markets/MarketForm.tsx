@@ -30,7 +30,7 @@ import { Market } from "@/types/market";
 const formSchema = z.object({
   title: z.string().min(1, "Le titre est requis"),
   status: z.enum(["en_cours", "en_attente", "termine"]),
-  budget: z.string().transform((val) => Number(val)),
+  budget: z.coerce.number().positive("Le budget doit être positif"),
   deadline: z.string(),
   riskLevel: z.enum(["faible", "moyen", "eleve"]),
 });
@@ -47,7 +47,7 @@ export const MarketForm = ({ isOpen, onClose, onSubmit }: MarketFormProps) => {
     defaultValues: {
       title: "",
       status: "en_attente",
-      budget: "",
+      budget: 0,
       deadline: new Date().toISOString().split("T")[0],
       riskLevel: "faible",
     },
