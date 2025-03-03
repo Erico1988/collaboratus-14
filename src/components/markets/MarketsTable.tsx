@@ -73,8 +73,8 @@ export const MarketsTable = ({ markets, onMarketClick }: MarketsTableProps) => {
             <TableCell>{new Date(market.deadline).toLocaleDateString()}</TableCell>
             <TableCell className="capitalize">{market.riskLevel}</TableCell>
           </TableRow>
-        </TableBody>
-      </Table>
+        ))}
+      </TableBody>
     </Table>
   );
 };
