@@ -7,6 +7,7 @@ import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import TasksPage from "./pages/tasks";
 import MarketsPage from "./pages/markets";
+import ReportsPage from "./pages/reports";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -26,6 +27,7 @@ const App = () => (
           <Route path="/" element={<Index />} />
           <Route path="/tasks" element={<TasksPage />} />
           <Route path="/markets" element={<MarketsPage />} />
+          <Route path="/reports" element={<ReportsPage />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
