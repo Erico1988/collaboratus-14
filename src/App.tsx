@@ -8,6 +8,7 @@ import NotFound from "./pages/NotFound";
 import TasksPage from "./pages/tasks";
 import MarketsPage from "./pages/markets";
 import ReportsPage from "./pages/reports";
+import { ThemeProvider } from "./styles/ThemeProvider";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -20,18 +21,20 @@ const queryClient = new QueryClient({
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/tasks" element={<TasksPage />} />
-          <Route path="/markets" element={<MarketsPage />} />
-          <Route path="/reports" element={<ReportsPage />} />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
+    <ThemeProvider>
+      <TooltipProvider>
+        <Toaster />
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route path="/tasks" element={<TasksPage />} />
+            <Route path="/markets" element={<MarketsPage />} />
+            <Route path="/reports" element={<ReportsPage />} />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </BrowserRouter>
+      </TooltipProvider>
+    </ThemeProvider>
   </QueryClientProvider>
 );
 
