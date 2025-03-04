@@ -1,11 +1,9 @@
 
 import { createContext, useContext } from "react";
+import { DateRange } from "react-day-picker";
 
 type ReportContextType = {
-  dateRange: {
-    from: Date | undefined;
-    to: Date | undefined;
-  };
+  dateRange: DateRange | undefined;
   department: string;
   refreshData: () => void;
   isRefreshing: boolean;

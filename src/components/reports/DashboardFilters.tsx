@@ -1,4 +1,3 @@
-
 import { 
   Card, 
   CardContent 
@@ -23,10 +22,7 @@ import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 
 interface DashboardFiltersProps {
-  dateRange: {
-    from: Date | undefined;
-    to: Date | undefined;
-  };
+  dateRange: DateRange;
   department: string;
   onDateRangeChange: (range: DateRange | undefined) => void;
   onDepartmentChange: (department: string) => void;
@@ -75,14 +71,7 @@ export const DashboardFilters = ({
   };
 
   const handleDateRangeChange = (range: DateRange | undefined) => {
-    if (range && range.from) {
-      // Ensure range.to is defined
-      const updatedRange = {
-        from: range.from,
-        to: range.to || range.from
-      };
-      onDateRangeChange(updatedRange);
-    }
+    onDateRangeChange(range);
   };
 
   const addFilter = (filterId: string) => {

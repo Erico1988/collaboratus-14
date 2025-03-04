@@ -10,12 +10,11 @@ import { DataTable } from "@/components/reports/DataTable";
 import { TrendsAnalysis } from "@/components/reports/TrendsAnalysis";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ReportContext } from "@/components/reports/ReportContext";
+import { DateRange } from "react-day-picker";
 
 const ReportsPage = () => {
-  const [dateRange, setDateRange] = useState<{
-    from: Date | undefined;
-    to: Date | undefined;
-  }>({
+  // Use DateRange type from react-day-picker and define as optional
+  const [dateRange, setDateRange] = useState<DateRange>({
     from: new Date(new Date().setMonth(new Date().getMonth() - 1)),
     to: new Date(),
   });
@@ -24,7 +23,19 @@ const ReportsPage = () => {
   const [selectedView, setSelectedView] = useState<"charts" | "data" | "trends">("charts");
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  // Simuler un refresh des données
+  // Handler function that ensures 'to' is always set when 'from' is set
+  const handleDateRangeChange = (range: DateRange | undefined) => {
+    if (range && range.from) {
+      setDateRange({
+        from: range.from,
+        to: range.to || range.from
+      });
+    } else {
+      setDateRange({} as DateRange);
+    }
+  };
+
+  // Simulate data refresh
   const refreshData = () => {
     setIsRefreshing(true);
     setTimeout(() => setIsRefreshing(false), 1000);
@@ -51,7 +62,7 @@ const ReportsPage = () => {
               <DashboardFilters
                 dateRange={dateRange}
                 department={department}
-                onDateRangeChange={setDateRange}
+                onDateRangeChange={handleDateRangeChange}
                 onDepartmentChange={setDepartment}
                 onRefresh={refreshData}
               />
