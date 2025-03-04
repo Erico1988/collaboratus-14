@@ -1,4 +1,3 @@
-
 import { 
   Table, 
   TableBody, 
@@ -25,12 +24,10 @@ import {
   ChevronLeftIcon,
   ChevronRightIcon
 } from "lucide-react";
+import { DateRange } from "react-day-picker";
 
 interface DataTableProps {
-  dateRange: {
-    from: Date | undefined;
-    to: Date | undefined;
-  };
+  dateRange: DateRange;
   department: string;
   isLoading: boolean;
 }

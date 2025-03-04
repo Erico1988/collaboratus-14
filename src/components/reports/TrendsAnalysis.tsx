@@ -1,4 +1,3 @@
-
 import { 
   Card, 
   CardContent, 
@@ -30,12 +29,10 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { DateRange } from "react-day-picker";
 
 interface TrendsAnalysisProps {
-  dateRange: {
-    from: Date | undefined;
-    to: Date | undefined;
-  };
+  dateRange: DateRange;
   department: string;
   isLoading: boolean;
 }

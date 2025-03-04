@@ -1,13 +1,10 @@
-
 import { Card, CardContent } from "@/components/ui/card";
 import { ArrowDownIcon, ArrowUpIcon, TrendingUpIcon, TargetIcon, AlertCircleIcon, CheckCircleIcon } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { DateRange } from "react-day-picker";
 
 interface KPICardsProps {
-  dateRange: {
-    from: Date | undefined;
-    to: Date | undefined;
-  };
+  dateRange: DateRange;
   department: string;
   isLoading: boolean;
 }

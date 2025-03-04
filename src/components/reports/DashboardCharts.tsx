@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart, PieChart, LineChart, AreaChart, Bar, Pie, Line, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell, ScatterChart, Scatter, ZAxis } from "recharts";
 import { useState } from "react";
@@ -13,17 +12,14 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
+import { DateRange } from "react-day-picker";
 
 interface DashboardChartsProps {
-  dateRange: {
-    from: Date | undefined;
-    to: Date | undefined;
-  };
+  dateRange: DateRange;
   department: string;
   isLoading: boolean;
 }
 
-// Données améliorées pour les graphiques
 const marketStatusData = [
   { name: "En attente", value: 8, color: "#94a3b8" },
   { name: "En cours", value: 15, color: "#3b82f6" },
@@ -96,7 +92,6 @@ export const DashboardCharts = ({ dateRange, department, isLoading }: DashboardC
   const [chartType, setChartType] = useState<"daily" | "weekly" | "monthly">("monthly");
   const [currentLayout, setCurrentLayout] = useState<"grid" | "stack">("grid");
   
-  // Pour simuler le chargement
   const handleChartTypeChange = (value: string) => {
     setChartType(value as "daily" | "weekly" | "monthly");
   };
