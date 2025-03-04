@@ -58,7 +58,16 @@ export const MarketForm = ({ isOpen, onClose, onSubmit }: MarketFormProps) => {
   });
 
   const handleSubmit = (values: FormValues) => {
-    onSubmit(values); // Values from the form now match the required type
+    // Ensure all required fields are present
+    const marketData: Omit<Market, "id"> = {
+      title: values.title,
+      status: values.status,
+      budget: values.budget,
+      deadline: values.deadline,
+      riskLevel: values.riskLevel,
+    };
+    
+    onSubmit(marketData);
     onClose();
     form.reset();
   };
