@@ -27,13 +27,17 @@ import {
 } from "@/components/ui/select";
 import { Market } from "@/types/market";
 
+// Create a schema that ensures all required fields are present
 const formSchema = z.object({
   title: z.string().min(1, "Le titre est requis"),
   status: z.enum(["en_cours", "en_attente", "termine"]),
   budget: z.coerce.number().positive("Le budget doit être positif"),
-  deadline: z.string(),
+  deadline: z.string().min(1, "La date d'échéance est requise"),
   riskLevel: z.enum(["faible", "moyen", "eleve"]),
 });
+
+// Define a type that matches the schema
+type FormValues = z.infer<typeof formSchema>;
 
 interface MarketFormProps {
   isOpen: boolean;
@@ -42,7 +46,7 @@ interface MarketFormProps {
 }
 
 export const MarketForm = ({ isOpen, onClose, onSubmit }: MarketFormProps) => {
-  const form = useForm<z.infer<typeof formSchema>>({
+  const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       title: "",
@@ -53,8 +57,8 @@ export const MarketForm = ({ isOpen, onClose, onSubmit }: MarketFormProps) => {
     },
   });
 
-  const handleSubmit = (values: z.infer<typeof formSchema>) => {
-    onSubmit(values);
+  const handleSubmit = (values: FormValues) => {
+    onSubmit(values); // Values from the form now match the required type
     onClose();
     form.reset();
   };

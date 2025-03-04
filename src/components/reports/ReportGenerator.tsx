@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import { FilePdf, FileSpreadsheet, Send, Download } from "lucide-react";
+import { FileText, FileSpreadsheet, Send, Download } from "lucide-react"; // Replace FilePdf with FileText
 import { Calendar } from "@/components/ui/calendar";
 import {
   Popover,
@@ -24,16 +24,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import { DateRange } from "react-day-picker";
 
 export const ReportGenerator = () => {
   const { toast } = useToast();
   const [reportType, setReportType] = useState("market");
   const [fileFormat, setFileFormat] = useState("pdf");
   const [generating, setGenerating] = useState(false);
-  const [date, setDate] = useState<{
-    from: Date | undefined;
-    to: Date | undefined;
-  }>({
+  const [date, setDate] = useState<DateRange>({
     from: new Date(new Date().setMonth(new Date().getMonth() - 1)),
     to: new Date(),
   });
@@ -42,6 +40,16 @@ export const ReportGenerator = () => {
     "budgetAnalysis",
     "delayAnalysis",
   ]);
+
+  // Handle date selection, ensuring to is always set
+  const handleDateSelect = (selectedDate: DateRange | undefined) => {
+    if (selectedDate) {
+      setDate({
+        from: selectedDate.from,
+        to: selectedDate.to || selectedDate.from // Ensure to is always set
+      });
+    }
+  };
 
   const toggleSection = (sectionId: string) => {
     setSelectedSections((prev) =>
@@ -116,7 +124,7 @@ export const ReportGenerator = () => {
                       mode="range"
                       defaultMonth={date?.from}
                       selected={date}
-                      onSelect={setDate}
+                      onSelect={handleDateSelect}
                       numberOfMonths={2}
                       locale={fr}
                     />
@@ -266,7 +274,7 @@ export const ReportGenerator = () => {
             >
               <TabsList className="grid grid-cols-3 w-full">
                 <TabsTrigger value="pdf" className="flex items-center gap-2">
-                  <FilePdf className="h-4 w-4" />
+                  <FileText className="h-4 w-4" />
                   <span>PDF</span>
                 </TabsTrigger>
                 <TabsTrigger value="excel" className="flex items-center gap-2">
@@ -313,7 +321,7 @@ export const ReportGenerator = () => {
         <CardContent className="h-[550px] flex flex-col items-center justify-center bg-gray-50 rounded-md border border-dashed border-gray-300">
           {selectedSections.length === 0 ? (
             <div className="text-center text-gray-400">
-              <FilePdf className="h-16 w-16 mx-auto mb-4 opacity-20" />
+              <FileText className="h-16 w-16 mx-auto mb-4 opacity-20" />
               <p>Sélectionnez au moins une section</p>
               <p className="text-sm">pour voir l'aperçu</p>
             </div>

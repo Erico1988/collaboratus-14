@@ -18,6 +18,7 @@ import { CalendarIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
+import { DateRange } from "react-day-picker";
 
 interface DashboardFiltersProps {
   dateRange: {
@@ -35,10 +36,10 @@ export const DashboardFilters = ({
   onDateRangeChange,
   onDepartmentChange,
 }: DashboardFiltersProps) => {
-  const [date, setDate] = useState<{
-    from: Date | undefined;
-    to: Date | undefined;
-  }>(dateRange);
+  const [date, setDate] = useState<DateRange | undefined>({
+    from: dateRange.from,
+    to: dateRange.to
+  });
 
   // Create a list of fake departments
   const departments = [
@@ -49,6 +50,19 @@ export const DashboardFilters = ({
     { id: "sales", name: "Ventes" },
     { id: "legal", name: "Juridique" },
   ];
+
+  // Handler to safely update date ranges
+  const handleDateSelect = (selectedDate: DateRange | undefined) => {
+    setDate(selectedDate);
+    
+    // Only update the parent if we have valid dates
+    if (selectedDate?.from) {
+      onDateRangeChange({
+        from: selectedDate.from,
+        to: selectedDate.to || selectedDate.from // Ensure to is always set
+      });
+    }
+  };
 
   return (
     <div className="flex flex-col sm:flex-row gap-4 p-4 bg-white/80 backdrop-blur-sm border rounded-lg">
@@ -81,12 +95,7 @@ export const DashboardFilters = ({
               mode="range"
               defaultMonth={date?.from}
               selected={date}
-              onSelect={(selectedDate) => {
-                setDate(selectedDate);
-                if (selectedDate?.from && selectedDate?.to) {
-                  onDateRangeChange(selectedDate);
-                }
-              }}
+              onSelect={handleDateSelect}
               numberOfMonths={2}
               locale={fr}
             />
