@@ -7,14 +7,14 @@ import { toast } from "sonner";
 import { KanbanHeader } from "./KanbanHeader";
 import { ColumnDialog } from "./ColumnDialog";
 import { WorkflowDialog } from "./WorkflowDialog";
-import { MarketFilter } from "./filters/MarketFilter";
 import { initialColumns } from "@/data/initialKanbanData";
 
 interface KanbanBoardProps {
   tasks: Task[];
+  onTaskSelect?: (task: Task) => void;
 }
 
-export const KanbanBoard = ({ tasks }: KanbanBoardProps) => {
+export const KanbanBoard = ({ tasks, onTaskSelect }: KanbanBoardProps) => {
   const [columns, setColumns] = useState<IKanbanColumn[]>(initialColumns);
   const [columnDialogOpen, setColumnDialogOpen] = useState(false);
   const [workflowDialogOpen, setWorkflowDialogOpen] = useState(false);
@@ -25,7 +25,6 @@ export const KanbanBoard = ({ tasks }: KanbanBoardProps) => {
   const filteredColumns = columns.map(column => ({
     ...column,
     tasks: tasks.filter(task => 
-      (!selectedMarketId || task.marketId === selectedMarketId) &&
       task.status === column.id
     )
   }));
@@ -154,10 +153,6 @@ export const KanbanBoard = ({ tasks }: KanbanBoardProps) => {
           onManageWorkflow={() => setWorkflowDialogOpen(true)}
           onViewAnalytics={() => toast.info("Fonctionnalité en cours de développement")}
         />
-        <MarketFilter
-          selectedMarketId={selectedMarketId}
-          onMarketChange={setSelectedMarketId}
-        />
       </div>
 
       <DragDropContext onDragEnd={onDragEnd}>
@@ -171,6 +166,7 @@ export const KanbanBoard = ({ tasks }: KanbanBoardProps) => {
                   onEditColumn={() => handleEditColumn(column.id)}
                   onDeleteColumn={() => handleDeleteColumn(column.id)}
                   onManageAccess={() => handleManageAccess(column.id)}
+                  onTaskSelect={onTaskSelect}
                 />
               )}
             </Droppable>
