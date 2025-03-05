@@ -25,15 +25,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Market } from "@/types/market";
+import { Market, MarketStatus } from "@/types/market";
 
 // Create a schema that ensures all required fields are present
 const formSchema = z.object({
   title: z.string().min(1, "Le titre est requis"),
-  status: z.enum(["en_cours", "en_attente", "termine"]),
+  reference: z.string().min(1, "La référence est requise"),
+  description: z.string().min(1, "La description est requise"),
+  status: z.enum(["en_cours", "en_attente", "termine"] as const),
   budget: z.coerce.number().positive("Le budget doit être positif"),
+  startDate: z.string().min(1, "La date de début est requise"),
+  endDate: z.string().min(1, "La date de fin est requise"),
   deadline: z.string().min(1, "La date d'échéance est requise"),
-  riskLevel: z.enum(["faible", "moyen", "eleve"]),
+  riskLevel: z.enum(["faible", "moyen", "eleve"] as const),
 });
 
 // Define a type that matches the schema
@@ -50,8 +54,12 @@ export const MarketForm = ({ isOpen, onClose, onSubmit }: MarketFormProps) => {
     resolver: zodResolver(formSchema),
     defaultValues: {
       title: "",
+      reference: "",
+      description: "",
       status: "en_attente",
       budget: 0,
+      startDate: new Date().toISOString().split("T")[0],
+      endDate: new Date().toISOString().split("T")[0],
       deadline: new Date().toISOString().split("T")[0],
       riskLevel: "faible",
     },
@@ -60,11 +68,9 @@ export const MarketForm = ({ isOpen, onClose, onSubmit }: MarketFormProps) => {
   const handleSubmit = (values: FormValues) => {
     // Ensure all required fields are present
     const marketData: Omit<Market, "id"> = {
-      title: values.title,
-      status: values.status,
-      budget: values.budget,
-      deadline: values.deadline,
-      riskLevel: values.riskLevel,
+      ...values,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
     };
     
     onSubmit(marketData);
@@ -95,6 +101,32 @@ export const MarketForm = ({ isOpen, onClose, onSubmit }: MarketFormProps) => {
             />
             <FormField
               control={form.control}
+              name="reference"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Référence</FormLabel>
+                  <FormControl>
+                    <Input {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="description"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Description</FormLabel>
+                  <FormControl>
+                    <Input {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
               name="status"
               render={({ field }) => (
                 <FormItem>
@@ -115,54 +147,84 @@ export const MarketForm = ({ isOpen, onClose, onSubmit }: MarketFormProps) => {
                 </FormItem>
               )}
             />
-            <FormField
-              control={form.control}
-              name="budget"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Budget</FormLabel>
-                  <FormControl>
-                    <Input type="number" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="deadline"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Date d'échéance</FormLabel>
-                  <FormControl>
-                    <Input type="date" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="riskLevel"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Niveau de risque</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="budget"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Budget</FormLabel>
                     <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Sélectionner un niveau" />
-                      </SelectTrigger>
+                      <Input type="number" {...field} />
                     </FormControl>
-                    <SelectContent>
-                      <SelectItem value="faible">Faible</SelectItem>
-                      <SelectItem value="moyen">Moyen</SelectItem>
-                      <SelectItem value="eleve">Élevé</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="riskLevel"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Niveau de risque</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Sélectionner un niveau" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="faible">Faible</SelectItem>
+                        <SelectItem value="moyen">Moyen</SelectItem>
+                        <SelectItem value="eleve">Élevé</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <FormField
+                control={form.control}
+                name="startDate"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Date de début</FormLabel>
+                    <FormControl>
+                      <Input type="date" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="endDate"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Date de fin</FormLabel>
+                    <FormControl>
+                      <Input type="date" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="deadline"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Date d'échéance</FormLabel>
+                    <FormControl>
+                      <Input type="date" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
             <div className="flex justify-end space-x-2">
               <Button variant="outline" type="button" onClick={onClose}>
                 Annuler

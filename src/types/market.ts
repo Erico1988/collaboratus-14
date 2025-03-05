@@ -1,5 +1,5 @@
 
-export type MarketStatus = 'draft' | 'published' | 'in_progress' | 'awarded' | 'completed' | 'cancelled';
+export type MarketStatus = 'draft' | 'published' | 'in_progress' | 'awarded' | 'completed' | 'cancelled' | 'en_cours' | 'en_attente' | 'termine';
 export type RiskLevel = "faible" | "moyen" | "eleve";
 
 export interface Market {

@@ -7,7 +7,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Market } from "@/types/market";
+import { Market, MarketStatus } from "@/types/market";
 import { Badge } from "@/components/ui/badge";
 import { formatEuro } from "@/lib/utils";
 
@@ -16,27 +16,42 @@ interface MarketsTableProps {
   onMarketClick: (market: Market) => void;
 }
 
-const getStatusBadgeVariant = (status: Market["status"]) => {
+const getStatusBadgeVariant = (status: MarketStatus) => {
   switch (status) {
     case "en_cours":
+    case "in_progress":
       return "default";
     case "en_attente":
+    case "published":
+    case "draft":
       return "secondary";
     case "termine":
+    case "completed":
+    case "awarded":
       return "outline";
+    case "cancelled":
+      return "destructive";
     default:
       return "default";
   }
 };
 
-const getStatusLabel = (status: Market["status"]) => {
+const getStatusLabel = (status: MarketStatus) => {
   switch (status) {
     case "en_cours":
+    case "in_progress":
       return "En cours";
     case "en_attente":
+    case "published":
       return "En attente";
     case "termine":
+    case "completed":
+    case "awarded":
       return "Terminé";
+    case "draft":
+      return "Brouillon";
+    case "cancelled":
+      return "Annulé";
     default:
       return status;
   }

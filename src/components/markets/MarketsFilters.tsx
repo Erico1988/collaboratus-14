@@ -32,6 +32,8 @@ export const MarketsFilters = ({
           <SelectItem value="en_cours">En cours</SelectItem>
           <SelectItem value="en_attente">En attente</SelectItem>
           <SelectItem value="termine">Terminé</SelectItem>
+          <SelectItem value="draft">Brouillon</SelectItem>
+          <SelectItem value="cancelled">Annulé</SelectItem>
         </SelectContent>
       </Select>
     </div>
