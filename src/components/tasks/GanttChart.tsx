@@ -5,10 +5,11 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { toast } from "sonner";
 import { gantt } from 'dhtmlx-gantt';
 import 'dhtmlx-gantt/codebase/dhtmlxgantt.css';
+import { format } from 'date-fns';
 import { GanttToolbar } from './gantt/GanttToolbar';
 import { configureGantt, configureTemplates, convertTasksToGanttFormat, getGanttStyles } from './gantt/utils';
 import { GanttChartProps, ZoomLevel, ExportType } from './gantt/types';
-import { MarketFilter } from './filters/MarketFilter';
+import { ZOOM_LEVELS } from './gantt/constants';
 
 export const GanttChart = ({ tasks }: GanttChartProps) => {
   const ganttContainer = useRef<HTMLDivElement>(null);
@@ -17,16 +18,11 @@ export const GanttChart = ({ tasks }: GanttChartProps) => {
   const [showProgress, setShowProgress] = useState(true);
   const [showCriticalPath, setShowCriticalPath] = useState(true);
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [selectedMarketId, setSelectedMarketId] = useState<string>("");
   const [isInitialized, setIsInitialized] = useState(false);
   const isFirstRender = useRef(true);
 
-  const filteredTasks = selectedMarketId 
-    ? tasks.filter(task => task.marketId === selectedMarketId)
-    : tasks;
-
   useEffect(() => {
-    if (!ganttContainer.current || !filteredTasks.length) return;
+    if (!ganttContainer.current || !tasks.length) return;
 
     const initGantt = async () => {
       try {
@@ -38,15 +34,22 @@ export const GanttChart = ({ tasks }: GanttChartProps) => {
         configureGantt();
         configureTemplates();
 
+        // Initialize gantt with the container
         gantt.init(ganttContainer.current);
-        
-        const { data, links } = convertTasksToGanttFormat(filteredTasks);
-        
+
+        // Convert data before parsing
+        const { data, links } = convertTasksToGanttFormat(tasks);
+
+        // Clear existing data
         gantt.clearAll();
+
+        // Parse new data
         gantt.parse({ data, links });
 
+        // Une fois que les données sont chargées, on met à jour la date
         if (data.length > 0) {
           const firstTask = data[0];
+          // On attend que le rendu soit terminé avant de scroller
           setTimeout(() => {
             try {
               gantt.showDate(firstTask.start_date);
@@ -56,6 +59,16 @@ export const GanttChart = ({ tasks }: GanttChartProps) => {
             }
           }, 100);
         }
+
+        gantt.attachEvent("onAfterTaskUpdate", (id, task) => {
+          toast.success(`Tâche "${task.text}" mise à jour`);
+          return true;
+        });
+
+        gantt.attachEvent("onLinkCreated", (link) => {
+          toast.success("Nouvelle dépendance ajoutée");
+          return true;
+        });
 
         setIsInitialized(true);
       } catch (error) {
@@ -77,26 +90,40 @@ export const GanttChart = ({ tasks }: GanttChartProps) => {
       }
       setIsInitialized(false);
     };
-  }, [filteredTasks]);
+  }, [tasks]);
 
   const handleZoomChange = (level: ZoomLevel) => {
-    setCurrentZoom(level);
+    if (!isInitialized) return;
+    try {
+      setCurrentZoom(level);
+      gantt.config.scales = ZOOM_LEVELS[level].scales as any;
+      gantt.render();
+    } catch (error) {
+      console.error("Error setting zoom:", error);
+      toast.error("Erreur lors du changement de zoom");
+    }
   };
 
   const handleNavigate = (direction: 'prev' | 'next') => {
-    const newDate = new Date(currentDate);
-    newDate.setDate(newDate.getDate() + (direction === 'next' ? 7 : -7));
-    setCurrentDate(newDate);
-    gantt.showDate(newDate);
+    if (!isInitialized) return;
+    try {
+      const newDate = new Date(currentDate);
+      newDate.setDate(newDate.getDate() + (direction === 'next' ? 7 : -7));
+      setCurrentDate(newDate);
+      gantt.showDate(newDate);
+    } catch (error) {
+      console.error("Error navigating date:", error);
+      toast.error("Erreur lors de la navigation");
+    }
   };
 
-  const handleExport = (type: ExportType) => {
+  const handleExport = (exportType: ExportType) => {
     if (!isInitialized) return;
-
     try {
-      const filename = `gantt-export-${new Date().toISOString().split('T')[0]}`;
+      const dateStr = format(new Date(), 'yyyy-MM-dd');
+      const filename = `procuretrack-planning-${dateStr}`;
       
-      switch (type) {
+      switch (exportType) {
         case 'pdf':
           gantt.exportToPDF({ filename: `${filename}.pdf` });
           break;
@@ -108,32 +135,26 @@ export const GanttChart = ({ tasks }: GanttChartProps) => {
           break;
       }
     } catch (error) {
-      console.error("Error exporting gantt:", error);
+      console.error("Error exporting data:", error);
       toast.error("Erreur lors de l'export");
     }
   };
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-between items-center">
-        <GanttToolbar
-          currentDate={currentDate}
-          isInitialized={isInitialized}
-          showResources={showResources}
-          showProgress={showProgress}
-          showCriticalPath={showCriticalPath}
-          onZoomChange={handleZoomChange}
-          onNavigate={handleNavigate}
-          onResourcesToggle={setShowResources}
-          onProgressToggle={setShowProgress}
-          onCriticalPathToggle={setShowCriticalPath}
-          onExport={handleExport}
-        />
-        <MarketFilter
-          selectedMarketId={selectedMarketId}
-          onMarketChange={setSelectedMarketId}
-        />
-      </div>
+      <GanttToolbar
+        currentDate={currentDate}
+        isInitialized={isInitialized}
+        showResources={showResources}
+        showProgress={showProgress}
+        showCriticalPath={showCriticalPath}
+        onZoomChange={handleZoomChange}
+        onNavigate={handleNavigate}
+        onResourcesToggle={setShowResources}
+        onProgressToggle={setShowProgress}
+        onCriticalPathToggle={setShowCriticalPath}
+        onExport={handleExport}
+      />
 
       <Card className="p-4">
         <ScrollArea className="h-[600px] relative">

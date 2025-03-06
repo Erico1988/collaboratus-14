@@ -22,7 +22,6 @@ interface KanbanColumnProps {
   onEditColumn: (columnId: string) => void;
   onDeleteColumn: (columnId: string) => void;
   onManageAccess: (columnId: string) => void;
-  onTaskSelect?: (task: Task) => void;
 }
 
 export const KanbanColumn = ({ 
@@ -30,8 +29,7 @@ export const KanbanColumn = ({
   provided, 
   onEditColumn,
   onDeleteColumn,
-  onManageAccess,
-  onTaskSelect
+  onManageAccess
 }: KanbanColumnProps) => {
   const tasksInProgress = column.tasks.filter(task => !task.isBlocked).length;
   const blockedTasks = column.tasks.filter(task => task.isBlocked).length;
@@ -139,13 +137,11 @@ export const KanbanColumn = ({
         {column.tasks.map((task, index) => (
           <Draggable key={task.id} draggableId={task.id} index={index}>
             {(provided, snapshot) => (
-              <div onClick={() => onTaskSelect && onTaskSelect(task)}>
-                <TaskCard
-                  task={task}
-                  provided={provided}
-                  isDragging={snapshot.isDragging}
-                />
-              </div>
+              <TaskCard
+                task={task}
+                provided={provided}
+                isDragging={snapshot.isDragging}
+              />
             )}
           </Draggable>
         ))}

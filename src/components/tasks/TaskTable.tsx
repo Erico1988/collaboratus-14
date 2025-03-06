@@ -14,7 +14,6 @@ import { fr } from "date-fns/locale";
 
 interface TaskTableProps {
   tasks: Task[];
-  onTaskSelect?: (task: Task) => void;
 }
 
 const priorityColors: Record<TaskPriority, string> = {
@@ -34,28 +33,23 @@ const statusColors: Record<TaskStatus, string> = {
   assigned: "bg-sky-500",
 };
 
-export const TaskTable = ({ tasks, onTaskSelect }: TaskTableProps) => {
+export const TaskTable = ({ tasks }: TaskTableProps) => {
   return (
     <Table>
       <TableHeader>
         <TableRow>
           <TableHead>Tâche</TableHead>
-          <TableHead>Marché</TableHead>
           <TableHead>Statut</TableHead>
           <TableHead>Priorité</TableHead>
           <TableHead>Assigné à</TableHead>
           <TableHead>Date d'échéance</TableHead>
+          <TableHead>Dépendances</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
         {tasks.map((task) => (
-          <TableRow 
-            key={task.id} 
-            onClick={() => onTaskSelect && onTaskSelect(task)}
-            className="cursor-pointer hover:bg-muted/50"
-          >
+          <TableRow key={task.id}>
             <TableCell className="font-medium">{task.title}</TableCell>
-            <TableCell>{task.marketTitle || "-"}</TableCell>
             <TableCell>
               <Badge className={statusColors[task.status]}>
                 {task.status === 'todo' && 'À faire'}
@@ -78,6 +72,15 @@ export const TaskTable = ({ tasks, onTaskSelect }: TaskTableProps) => {
             <TableCell>{task.assigneeName || '-'}</TableCell>
             <TableCell>
               {format(new Date(task.dueDate), 'dd MMM yyyy', { locale: fr })}
+            </TableCell>
+            <TableCell>
+              {task.dependsOn?.length 
+                ? tasks
+                    .filter(t => task.dependsOn?.includes(t.id))
+                    .map(t => t.title)
+                    .join(', ')
+                : '-'
+              }
             </TableCell>
           </TableRow>
         ))}

@@ -2,7 +2,6 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Task } from "@/types/task";
 import { TaskForm } from "./TaskForm";
-import { markets } from "@/data/markets";
 
 interface TaskDialogProps {
   task?: Task;
@@ -27,7 +26,6 @@ export const TaskDialog = ({ task, open, onOpenChange }: TaskDialogProps) => {
         </DialogHeader>
         <TaskForm 
           task={task}
-          markets={markets}
           onSubmit={handleSubmit}
           onCancel={() => onOpenChange(false)}
         />

@@ -2,36 +2,106 @@
 import { DragDropContext, Droppable } from "@hello-pangea/dnd";
 import { KanbanColumn } from "./KanbanColumn";
 import { useState } from "react";
-import { KanbanColumn as IKanbanColumn, Task, TaskStatus } from "@/types/task";
+import { Task, TaskStatus, KanbanColumn as IKanbanColumn } from "@/types/task";
 import { toast } from "sonner";
 import { KanbanHeader } from "./KanbanHeader";
 import { ColumnDialog } from "./ColumnDialog";
 import { WorkflowDialog } from "./WorkflowDialog";
-import { initialColumns } from "@/data/initialKanbanData";
 
-interface KanbanBoardProps {
-  tasks: Task[];
-  onTaskSelect?: (task: Task) => void;
-}
+const initialColumns: IKanbanColumn[] = [
+  {
+    id: "todo",
+    title: "À faire",
+    tasks: [
+      {
+        id: "1",
+        title: "Analyser les besoins",
+        description: "Définir les spécifications détaillées du projet",
+        status: "todo",
+        priority: "high",
+        dueDate: "2024-04-01",
+        assigneeName: "Marie Durant",
+        createdAt: "2024-03-15",
+        updatedAt: "2024-03-15",
+        comments: [
+          {
+            id: "c1",
+            taskId: "1",
+            userId: "u1",
+            userName: "Jean Martin",
+            content: "N'oubliez pas d'inclure les spécifications techniques",
+            createdAt: "2024-03-15",
+            updatedAt: "2024-03-15"
+          }
+        ],
+        attachments: ["spec.pdf"]
+      },
+      {
+        id: "2",
+        title: "Préparer l'appel d'offres",
+        description: "Rédiger le cahier des charges",
+        status: "todo",
+        priority: "medium",
+        dueDate: "2024-04-15",
+        assigneeName: "Jean Martin",
+        createdAt: "2024-03-15",
+        updatedAt: "2024-03-15",
+        dependsOn: ["1"],
+        isBlocked: true
+      },
+    ],
+    automations: [
+      {
+        id: "auto1",
+        trigger: "deadline_approaching",
+        action: "send_notification",
+        parameters: { days: 2 }
+      }
+    ]
+  },
+  {
+    id: "in_progress",
+    title: "En cours",
+    tasks: [],
+    roleAccess: ["developer", "manager"]
+  },
+  {
+    id: "review",
+    title: "En révision",
+    tasks: [],
+    automations: [
+      {
+        id: "auto2",
+        trigger: "status_change",
+        action: "change_status",
+        parameters: { after: "48h", newStatus: "done" }
+      }
+    ]
+  },
+  {
+    id: "done",
+    title: "Terminé",
+    tasks: [],
+  },
+];
 
-export const KanbanBoard = ({ tasks, onTaskSelect }: KanbanBoardProps) => {
+export const KanbanBoard = () => {
   const [columns, setColumns] = useState<IKanbanColumn[]>(initialColumns);
   const [columnDialogOpen, setColumnDialogOpen] = useState(false);
   const [workflowDialogOpen, setWorkflowDialogOpen] = useState(false);
   const [selectedColumn, setSelectedColumn] = useState<IKanbanColumn | undefined>();
-  const [selectedMarketId, setSelectedMarketId] = useState<string>("");
-
-  // Filtrer les colonnes en fonction du marché sélectionné
-  const filteredColumns = columns.map(column => ({
-    ...column,
-    tasks: tasks.filter(task => 
-      task.status === column.id
-    )
-  }));
 
   const handleAddColumn = () => {
     setSelectedColumn(undefined);
     setColumnDialogOpen(true);
+  };
+
+  const handleManageWorkflow = () => {
+    setWorkflowDialogOpen(true);
+  };
+
+  const handleViewAnalytics = () => {
+    toast.info("Fonctionnalité en cours de développement");
   };
 
   const handleEditColumn = (columnId: string) => {
@@ -77,6 +147,7 @@ export const KanbanBoard = ({ tasks, onTaskSelect }: KanbanBoardProps) => {
   };
 
   const handleWorkflowSubmit = (data: any) => {
+    // Mise à jour des automatisations du workflow
     const updatedColumns = columns.map(col => ({
       ...col,
       automations: data.automations[col.id] || []
@@ -147,26 +218,23 @@ export const KanbanBoard = ({ tasks, onTaskSelect }: KanbanBoardProps) => {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <KanbanHeader
-          onAddColumn={handleAddColumn}
-          onManageWorkflow={() => setWorkflowDialogOpen(true)}
-          onViewAnalytics={() => toast.info("Fonctionnalité en cours de développement")}
-        />
-      </div>
+      <KanbanHeader
+        onAddColumn={handleAddColumn}
+        onManageWorkflow={handleManageWorkflow}
+        onViewAnalytics={handleViewAnalytics}
+      />
 
       <DragDropContext onDragEnd={onDragEnd}>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {filteredColumns.map((column) => (
+          {columns.map((column) => (
             <Droppable key={column.id} droppableId={column.id}>
               {(provided) => (
                 <KanbanColumn
                   column={column}
                   provided={provided}
-                  onEditColumn={() => handleEditColumn(column.id)}
-                  onDeleteColumn={() => handleDeleteColumn(column.id)}
-                  onManageAccess={() => handleManageAccess(column.id)}
-                  onTaskSelect={onTaskSelect}
+                  onEditColumn={handleEditColumn}
+                  onDeleteColumn={handleDeleteColumn}
+                  onManageAccess={handleManageAccess}
                 />
               )}
             </Droppable>

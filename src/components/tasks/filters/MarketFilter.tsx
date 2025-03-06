@@ -2,12 +2,11 @@
 import { 
   Select,
   SelectContent,
-  SelectGroup,
   SelectItem,
-  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
 import { markets } from "@/data/markets";
 
 interface MarketFilterProps {
@@ -17,24 +16,24 @@ interface MarketFilterProps {
 
 export const MarketFilter = ({ selectedMarketId, onMarketChange }: MarketFilterProps) => {
   return (
-    <Select
-      value={selectedMarketId}
-      onValueChange={onMarketChange}
-    >
-      <SelectTrigger>
-        <SelectValue placeholder="Tous les marchés" />
-      </SelectTrigger>
-      <SelectContent>
-        <SelectGroup>
-          <SelectLabel>Marchés</SelectLabel>
+    <div className="w-[250px]">
+      <Label htmlFor="market-filter">Filtrer par marché</Label>
+      <Select
+        value={selectedMarketId}
+        onValueChange={onMarketChange}
+      >
+        <SelectTrigger id="market-filter">
+          <SelectValue placeholder="Tous les marchés" />
+        </SelectTrigger>
+        <SelectContent>
           <SelectItem value="">Tous les marchés</SelectItem>
           {markets.map(market => (
             <SelectItem key={market.id} value={market.id}>
               {market.title}
             </SelectItem>
           ))}
-        </SelectGroup>
-      </SelectContent>
-    </Select>
+        </SelectContent>
+      </Select>
+    </div>
   );
 };
