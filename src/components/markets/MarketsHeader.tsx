@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 
@@ -8,16 +7,11 @@ interface MarketsHeaderProps {
 
 export const MarketsHeader = ({ onNewMarket }: MarketsHeaderProps) => {
   return (
-    <div className="flex items-center justify-between">
-      <div>
-        <h1 className="text-2xl font-semibold">Marchés</h1>
-        <p className="text-muted-foreground">
-          Gérez vos marchés et leurs détails
-        </p>
-      </div>
+    <div className="flex justify-between items-center">
+      <h1 className="text-3xl font-bold">Marchés</h1>
       <Button onClick={onNewMarket}>
         <Plus className="mr-2 h-4 w-4" />
-        Nouveau marché
+        Nouveau Marché
       </Button>
     </div>
   );
