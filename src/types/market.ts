@@ -1,18 +1,33 @@
-
-export type MarketStatus = 'draft' | 'published' | 'in_progress' | 'awarded' | 'completed' | 'cancelled' | 'en_cours' | 'en_attente' | 'termine';
-export type RiskLevel = "faible" | "moyen" | "eleve";
+export type MarketStatus = 'en_cours' | 'en_attente' | 'termine' | 'annule' | 'brouillon';
+export type RiskLevel = 'faible' | 'moyen' | 'eleve';
 
 export interface Market {
   id: string;
   title: string;
-  reference: string;
-  description: string;
+  description?: string;
   status: MarketStatus;
   budget: number;
-  startDate: string;
-  endDate: string;
   deadline: string;
   riskLevel: RiskLevel;
-  createdAt: string;
-  updatedAt: string;
+  createdAt?: string;
+  updatedAt?: string;
+  department?: string;
+  contactName?: string;
+  contactEmail?: string;
+  documents?: string[];
+  tags?: string[];
+}
+
+export interface MarketFilter {
+  searchTerm?: string;
+  status?: MarketStatus | 'tous';
+  minBudget?: number;
+  maxBudget?: number;
+  dateRange?: {
+    start?: string;
+    end?: string;
+  };
+  riskLevel?: RiskLevel[];
+  department?: string[];
+  tags?: string[];
 }
